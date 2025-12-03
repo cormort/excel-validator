@@ -3,47 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel 驗算大師 (多模式版)</title>
+    <title>Excel 驗算大師 (關鍵字自訂版)</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #2563eb;
             --bg: #f8fafc;
             --err: #dc2626;
-            --ok: #16a34a;
             --badge-input: #3b82f6;
             --badge-target: #059669;
         }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: var(--bg);
-            color: #334155;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            margin: 0; padding: 20px; background: var(--bg); color: #334155;
+            height: 100vh; display: flex; flex-direction: column;
         }
         /* Header */
         .header-panel {
-            background: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
-            flex-shrink: 0;
+            background: white; padding: 15px 20px; border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; flex-shrink: 0;
         }
-        .toolbar {
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-            flex-wrap: wrap;
-        }
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
+        .toolbar { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        .control-group { display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 0.85rem; font-weight: 600; color: #64748b; }
         select, input { padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.9rem; }
         .btn {
@@ -51,33 +32,24 @@
             font-weight: 500; color: white; background: var(--primary); transition: 0.2s;
         }
         .btn:hover { background: #1d4ed8; transform: translateY(-1px); }
-        .btn-check { background: #059669; }
-        .btn-check:hover { background: #047857; }
         
-        /* 邏輯顯示區 */
-        .logic-panel {
-            background: #eff6ff; padding: 10px; border-radius: 6px;
-            border: 1px solid #bfdbfe; display: flex; gap: 10px;
-            align-items: center; margin-top: 10px; font-size: 0.9rem;
+        /* 關鍵字設定區 (特別加強顯眼度) */
+        .keyword-panel {
+            background: #fff7ed; padding: 8px 12px; border-radius: 6px;
+            border: 1px solid #fed7aa; display: flex; gap: 10px; align-items: flex-end;
         }
-        .logic-tag {
-            padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;
-            color: white; margin: 0 2px;
-        }
-        .tag-input { background-color: var(--badge-input); }
-        .tag-target { background-color: var(--badge-target); }
+        .keyword-panel input { border-color: #f97316; width: 150px; }
 
         /* 表格區 */
         #grid-container {
             flex-grow: 1; overflow: auto; background: white;
-            border: 1px solid #cbd5e1; border-radius: 8px; position: relative;
+            border: 1px solid #cbd5e1; border-radius: 8px;
         }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
         th, td {
             border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
             padding: 6px 8px; font-size: 13px; white-space: nowrap;
         }
-        /* 固定標題與左側 */
         .sticky-header th {
             background: #f1f5f9; position: sticky; top: 0; z-index: 10;
             border-bottom: 2px solid #cbd5e1; color: #475569;
@@ -85,36 +57,29 @@
         .sticky-col {
             position: sticky; left: 0; background: #f8fafc; z-index: 5;
             border-right: 2px solid #cbd5e1; font-weight: 600; text-align: center;
-            min-width: 40px;
         }
-        /* 互動樣式 */
-        .clickable-header:hover { background-color: #dbeafe; cursor: pointer; }
-        .clickable-row:hover { background-color: #dbeafe; cursor: pointer; color: var(--primary); }
-        
-        /* 選取狀態 */
-        .col-selected { background-color: #dbeafe !important; border-bottom: 2px solid var(--primary) !important; }
-        .row-selected { background-color: #dbeafe !important; }
-        .cell-selected-marker { background: var(--primary); color: white; border-radius: 50%; width:16px; height:16px; display:inline-block; line-height:16px; font-size:10px; margin-right:4px; }
-
-        /* 錯誤標示 */
+        /* 選取與錯誤 */
+        .clickable-header:hover, .clickable-row:hover { background-color: #dbeafe; cursor: pointer; }
+        .col-selected, .row-selected { background-color: #dbeafe !important; }
         .err-cell {
             background-color: #fef2f2 !important; color: #991b1b;
-            border: 2px solid #ef4444 !important; animation: pulse 2s infinite;
+            border: 2px solid #ef4444 !important;
         }
         .err-msg { display: block; font-size: 10px; color: #dc2626; margin-top: 2px; }
-        @keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(239,68,68,0.2); } }
-
-        /* Loading & Overlay */
-        #loading {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 8px; display: none; z-index: 3000;
+        
+        /* 邏輯提示 */
+        .logic-panel {
+            background: #eff6ff; padding: 10px; border-radius: 6px;
+            border: 1px solid #bfdbfe; margin-top: 10px; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 10px;
         }
+        .logic-tag { padding: 2px 6px; border-radius: 4px; font-weight: bold; color: white; margin: 0 2px; }
     </style>
 </head>
 <body>
 
     <div class="header-panel">
-        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(含方向性邏輯校正)</small></h2>
+        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(含自訂關鍵字功能)</small></h2>
         
         <div class="toolbar">
             <button class="btn" onclick="document.getElementById('fileElem').click()">📁 上傳 Excel</button>
@@ -131,47 +96,47 @@
             </div>
 
             <div class="control-group">
-                <label>選擇驗算模式</label>
-                <select id="calcMode" onchange="modeChanged()" style="background:#fff7ed; border-color:#f97316; font-weight:bold;">
-                    <option value="horizontal">↔️ 橫向 (欄位 A+B=C)</option>
-                    <option value="vertical_row">↕️ 縱向 (列號 A+B=C) [新功能]</option>
-                    <option value="vertical_group">📂 縱向 (自動分組加總)</option>
+                <label>驗算模式</label>
+                <select id="calcMode" onchange="modeChanged()" style="background:#f0f9ff; border-color:#0ea5e9; font-weight:bold;">
+                    <option value="horizontal">↔️ 橫向 (A+B=C)</option>
+                    <option value="vertical_row">↕️ 縱向 (指定列 A+B=C)</option>
+                    <option value="vertical_group">📂 縱向 (關鍵字分組)</option>
                 </select>
             </div>
 
+            <div id="keywordConfig" class="keyword-panel" style="display:none;">
+                <div class="control-group">
+                    <label style="color:#c2410c;">主管關鍵字 (小計)</label>
+                    <input type="text" id="parentKeywords" value="主管, 組長" placeholder="例如: 主管">
+                </div>
+                <div class="control-group">
+                    <label style="color:#c2410c;">總計關鍵字 (總表)</label>
+                    <input type="text" id="totalKeywords" value="合計, 總計" placeholder="例如: 合計">
+                </div>
+            </div>
+
             <div class="control-group" style="flex-direction:row; align-items:flex-end;">
-                <button class="btn btn-check" onclick="runCheck()">✓ 執行驗算</button>
+                <button class="btn" style="background:#059669;" onclick="runCheck()">✓ 執行驗算</button>
                 <button class="btn" style="background:#dc2626; margin-left:10px;" onclick="exportFullReport()">📑 下載報告</button>
                 <button class="btn" style="background:#64748b; margin-left:5px;" onclick="reset()">↺ 重置</button>
-            </div>
-            
-            <div id="verticalGroupOptions" style="display:none; align-items:center; gap:10px; background:#f1f5f9; padding:5px; border-radius:4px;">
-                <div class="control-group">
-                    <label>關鍵字 (以逗號分開)</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="text" id="parentKeywords" value="主管" placeholder="分組依據" style="width:80px;">
-                        <input type="text" id="totalKeywords" value="合計,總計" placeholder="總計列" style="width:80px;">
-                    </div>
-                </div>
             </div>
         </div>
 
         <div id="logicDisplay" class="logic-panel" style="display:none;">
-            <span id="logicIcon">💡</span>
-            <span id="logicText">請設定邏輯...</span>
+            <span id="logicText">準備就緒...</span>
         </div>
     </div>
 
     <div id="grid-container"></div>
-    <div id="loading">處理中...</div>
+    <div id="loading" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); color:white; padding:20px; border-radius:8px;">處理中...</div>
 
     <script>
         let workbook = null, sheetData = [], headers = [];
-        let selectedIndices = []; // 通用選取陣列 (可能是欄索引，也可能是列索引)
+        let selectedIndices = []; 
         let lastErrors = new Map();
         let correctionMap = new Map();
 
-        // === 檔案處理 ===
+        // 檔案上傳
         document.getElementById('fileElem').addEventListener('change', (e) => {
             if(e.target.files[0]) processFile(e.target.files[0]);
         });
@@ -196,10 +161,7 @@
             reader.readAsArrayBuffer(file);
         }
 
-        function switchSheet(name) {
-            reset();
-            loadSheet(name);
-        }
+        function switchSheet(name) { reset(); loadSheet(name); }
 
         function loadSheet(name) {
             const ws = workbook.Sheets[name];
@@ -207,55 +169,48 @@
             renderGrid();
         }
 
-        // === 渲染網格 (核心 UI) ===
+        // 渲染表格
         function renderGrid() {
             const gridDiv = document.getElementById('grid-container');
             const hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
             const mode = document.getElementById('calcMode').value;
 
             if (!sheetData || sheetData.length <= hRowIdx) {
-                gridDiv.innerHTML = '<div style="padding:20px;">請先上傳檔案或檢查標題列設定。</div>';
+                gridDiv.innerHTML = '<div style="padding:20px;">請先上傳檔案。</div>';
                 return;
             }
 
             headers = sheetData[hRowIdx];
-            let html = '<table id="dataTable"><thead><tr class="sticky-header">';
+            let html = '<table id="dataTable"><thead><tr class="sticky-header"><th class="sticky-col">列</th>';
             
-            // 左上角標題
-            html += '<th class="sticky-col">列</th>';
-
-            // 標題列渲染
             headers.forEach((h, cIdx) => {
                 let badge = '';
                 let className = '';
                 let onClick = '';
-
-                // 如果是橫向模式，標題可點選
-                if (mode === 'horizontal') {
+                
+                // 橫向與縱向分組模式：標題可點選
+                if (mode === 'horizontal' || mode === 'vertical_group') {
                     className = 'clickable-header';
                     onClick = `onclick="toggleSelection(${cIdx})"`;
                     const pos = selectedIndices.indexOf(cIdx);
                     if (pos > -1) {
                         className += ' col-selected';
-                        // 判斷是否為最後一個 (合計)
-                        const isTarget = (pos === selectedIndices.length - 1 && selectedIndices.length > 1);
-                        const bg = isTarget ? 'var(--badge-target)' : 'var(--badge-input)';
-                        const sym = isTarget ? '=' : '+';
-                        badge = `<span class="tag-logic" style="background:${bg}; color:white; padding:1px 5px; border-radius:3px; font-size:10px; margin-right:4px;">${sym}</span>`;
+                        if (mode === 'horizontal') {
+                            const isTarget = (pos === selectedIndices.length - 1 && selectedIndices.length > 1);
+                            badge = `<span class="logic-tag" style="background:${isTarget?'var(--badge-target)':'var(--badge-input)'}">${isTarget?'=':'+'}</span>`;
+                        } else {
+                            badge = `<span class="logic-tag" style="background:#f59e0b">群組欄</span>`;
+                        }
                     }
                 }
-                
-                html += `<th class="${className}" ${onClick}>${badge}${h || 'Col '+ XLSX.utils.encode_col(cIdx)}</th>`;
+                html += `<th class="${className}" ${onClick}>${badge}${h || 'Col '+cIdx}</th>`;
             });
             html += '</tr></thead><tbody>';
 
-            // 資料列渲染
             for (let r = hRowIdx + 1; r < sheetData.length; r++) {
                 const row = sheetData[r];
-                // 空列檢查
                 if (!row || row.every(c => !c && c!==0)) continue;
 
-                // 列號處理 (如果是縱向模式，列號可點選)
                 let rowHeaderClass = 'sticky-col';
                 let rowOnClick = '';
                 let rowBadge = '';
@@ -267,210 +222,205 @@
                     if (pos > -1) {
                         rowHeaderClass += ' row-selected';
                         const isTarget = (pos === selectedIndices.length - 1 && selectedIndices.length > 1);
-                        const bg = isTarget ? 'var(--badge-target)' : 'var(--badge-input)';
-                        const sym = isTarget ? '=' : '+';
-                        rowBadge = `<div style="background:${bg}; color:white; font-size:10px; border-radius:10px;">${sym}</div>`;
+                        rowBadge = `<span style="background:${isTarget?'var(--badge-target)':'var(--badge-input)'}; color:white; border-radius:50%; padding:0 4px; font-size:10px;">${isTarget?'=':'+'}</span>`;
                     }
                 }
 
                 html += `<tr><td class="${rowHeaderClass}" ${rowOnClick}>${r+1} ${rowBadge}</td>`;
-
-                // 儲存格內容
                 for (let c = 0; c < headers.length; c++) {
-                    const cellVal = row[c];
+                    const val = row[c];
                     const errKey = r * 10000 + c;
-                    
-                    // 格式化顯示
-                    let display = (typeof cellVal === 'number') ? cellVal.toLocaleString() : (cellVal || '');
+                    const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     
                     if (lastErrors.has(errKey)) {
                         html += `<td class="err-cell">${display}<span class="err-msg">${lastErrors.get(errKey)}</span></td>`;
                     } else {
-                        // 如果在選取的欄位/列中，給個淡淡的背景色提示
-                        let isHighlighted = false;
-                        if (mode === 'horizontal' && selectedIndices.includes(c)) isHighlighted = true;
-                        if (mode === 'vertical_row' && selectedIndices.includes(r)) isHighlighted = true;
-                        
-                        html += `<td style="${isHighlighted ? 'background:#f8fafc;' : ''}">${display}</td>`;
+                        let style = '';
+                        if ((mode === 'horizontal' || mode === 'vertical_group') && selectedIndices.includes(c)) style = 'background:#f0f9ff;';
+                        if (mode === 'vertical_row' && selectedIndices.includes(r)) style = 'background:#f0f9ff;';
+                        html += `<td style="${style}">${display}</td>`;
                     }
                 }
                 html += '</tr>';
             }
             html += '</tbody></table>';
             gridDiv.innerHTML = html;
-            
             updateLogicText();
         }
 
-        // === 互動邏輯 ===
+        // 互動邏輯
         function modeChanged() {
             selectedIndices = [];
             lastErrors.clear();
             const mode = document.getElementById('calcMode').value;
-            
-            // UI 切換
-            document.getElementById('verticalGroupOptions').style.display = (mode === 'vertical_group') ? 'flex' : 'none';
-            
+            // 顯示/隱藏關鍵字設定
+            document.getElementById('keywordConfig').style.display = (mode === 'vertical_group') ? 'flex' : 'none';
             renderGrid();
         }
 
         function toggleSelection(idx) {
             const mode = document.getElementById('calcMode').value;
-            
-            // 縱向分組模式採用舊的選取邏輯 (只選一欄當名稱) - 這裡簡化處理，先不讓它多選
             if (mode === 'vertical_group') {
+                // 分組模式只能選一個欄位 (名稱欄)
                 selectedIndices = [idx];
             } else {
-                // A+B=C 模式 (橫向或縱向)
                 const p = selectedIndices.indexOf(idx);
-                if (p > -1) {
-                    selectedIndices.splice(p, 1); // 取消
-                } else {
-                    selectedIndices.push(idx); // 加入 (最後加入的預設為 Total)
-                }
+                if (p > -1) selectedIndices.splice(p, 1);
+                else selectedIndices.push(idx);
             }
             renderGrid();
         }
 
         function updateLogicText() {
             const mode = document.getElementById('calcMode').value;
-            const disp = document.getElementById('logicDisplay');
             const txt = document.getElementById('logicText');
-            
-            disp.style.display = 'flex';
+            document.getElementById('logicDisplay').style.display = 'flex';
 
-            if (selectedIndices.length < 2) {
-                if(mode === 'vertical_group') txt.innerHTML = '請點選一個「單位名稱」欄位...';
-                else if(mode === 'vertical_row') txt.innerHTML = '請點選左側「列號」：先點加項 (A, B)，最後點合計列 (C)...';
-                else txt.innerHTML = '請點選上方「標題」：先點加項 (A, B)，最後點合計欄 (C)...';
+            if (selectedIndices.length === 0) {
+                txt.textContent = (mode === 'vertical_row') ? '請點選左側列號...' : '請點選標題欄位...';
                 return;
             }
 
-            // 產生說明文字 (方向性解釋)
-            if (mode === 'horizontal' || mode === 'vertical_row') {
-                const inputs = selectedIndices.slice(0, -1);
-                const target = selectedIndices[selectedIndices.length - 1];
-                
-                let labelInputs = '', labelTarget = '';
-                
-                if (mode === 'horizontal') {
-                    labelInputs = inputs.map(i => `<span class="logic-tag tag-input">${headers[i]}</span>`).join('+');
-                    labelTarget = `<span class="logic-tag tag-target">${headers[target]}</span>`;
-                    txt.innerHTML = `橫向邏輯： ${labelInputs} = ${labelTarget}`;
-                } else {
-                    labelInputs = inputs.map(i => `<span class="logic-tag tag-input">第${i+1}列</span>`).join('+');
-                    labelTarget = `<span class="logic-tag tag-target">第${target+1}列</span>`;
-                    txt.innerHTML = `縱向邏輯 (針對所有數值欄)： ${labelInputs} = ${labelTarget}`;
-                }
-            } else if (mode === 'vertical_group') {
-                 txt.innerHTML = `依據 <span class="logic-tag tag-input">${headers[selectedIndices[0]]}</span> 進行分組加總檢查`;
+            if (mode === 'vertical_group') {
+                const kws = document.getElementById('parentKeywords').value;
+                txt.innerHTML = `將依據 <strong>${headers[selectedIndices[0]]}</strong> 欄位檢查，尋找包含「<span style="color:#c2410c">${kws}</span>」的列並進行加總驗算。`;
+            } else if (mode === 'horizontal' || mode === 'vertical_row') {
+                txt.innerHTML = `已選擇 ${selectedIndices.length} 個項目。最後選取的為總計 (=)，其餘為加項 (+)。`;
             }
         }
 
-        function reset() {
-            selectedIndices = [];
-            lastErrors.clear();
-            correctionMap.clear();
-            renderGrid();
-        }
+        function reset() { selectedIndices = []; lastErrors.clear(); correctionMap.clear(); renderGrid(); }
 
-        // === 執行驗算 ===
+        // === 核心驗算邏輯 ===
         function runCheck() {
-            const mode = document.getElementById('calcMode').value;
             lastErrors.clear();
             correctionMap.clear();
-
-            if (selectedIndices.length < 2 && mode !== 'vertical_group') {
-                alert('請至少選擇 2 個項目 (A 和 C)'); return;
-            }
-
+            const mode = document.getElementById('calcMode').value;
             const hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
-            
-            // 1. 橫向 (A+B=C)
+
+            // 1. 橫向驗算
             if (mode === 'horizontal') {
+                if (selectedIndices.length < 2) { alert("請至少選擇 A 和 C"); return; }
                 const targetCol = selectedIndices[selectedIndices.length - 1];
                 const inputCols = selectedIndices.slice(0, -1);
 
                 for (let r = hRowIdx + 1; r < sheetData.length; r++) {
                     const row = sheetData[r];
                     if (!row || typeof row[targetCol] !== 'number') continue;
-
                     let sum = 0;
                     inputCols.forEach(c => sum += (parseFloat(row[c]) || 0));
-                    
                     checkVal(r, targetCol, sum, row[targetCol]);
                 }
             }
             
-            // 2. 縱向 (Row A + Row B = Row C) - 新功能
+            // 2. 縱向 (指定列) 驗算
             else if (mode === 'vertical_row') {
+                if (selectedIndices.length < 2) { alert("請至少選擇 2 列"); return; }
                 const targetRowIdx = selectedIndices[selectedIndices.length - 1];
                 const inputRowIndices = selectedIndices.slice(0, -1);
                 
-                // 針對每一個欄位進行檢查
                 for (let c = 0; c < headers.length; c++) {
-                    // 檢查目標格是否為數字，如果不是數字通常不用驗算 (可能是文字說明欄)
                     const targetVal = sheetData[targetRowIdx][c];
                     if (typeof targetVal !== 'number') continue;
-
                     let sum = 0;
                     inputRowIndices.forEach(rIdx => {
-                        const val = parseFloat(sheetData[rIdx][c]) || 0;
-                        sum += val;
+                        sum += (parseFloat(sheetData[rIdx][c]) || 0);
                     });
-
                     checkVal(targetRowIdx, c, sum, targetVal);
                 }
             }
 
-            // 3. 縱向分組 (舊邏輯，略作簡化保留)
+            // 3. 縱向 (群組/主管關鍵字) 驗算 - 完整實作
             else if (mode === 'vertical_group') {
-                // 這裡保留原本的邏輯 (略)
-                alert("請使用上方 A+B=C 模式進行簡單驗算，或使用進階分組功能 (程式碼邏輯如前版)");
+                if (selectedIndices.length !== 1) { alert("請先點選「單位/名稱」所在的欄位！"); return; }
+                
+                const nameIdx = selectedIndices[0];
+                // 讀取並處理關鍵字 (支援中英逗號)
+                const pKwInput = document.getElementById('parentKeywords').value;
+                const tKwInput = document.getElementById('totalKeywords').value;
+                const parentKws = pKwInput.split(/[,，]/).map(k => k.trim()).filter(k => k);
+                const totalKws = tKwInput.split(/[,，]/).map(k => k.trim()).filter(k => k);
+
+                // 找出所有數值欄位
+                const valCols = [];
+                headers.forEach((h, c) => {
+                    if (c !== nameIdx) valCols.push(c);
+                });
+
+                valCols.forEach(cIdx => {
+                    let tempGroupSum = 0;
+                    let groupStartRow = -1;
+                    
+                    // 掃描每一列
+                    for (let r = hRowIdx + 1; r < sheetData.length; r++) {
+                        const row = sheetData[r];
+                        if (!row) continue;
+                        
+                        const nameVal = String(row[nameIdx] || "");
+                        const cellVal = parseFloat(row[cIdx]) || 0;
+                        const isNumber = typeof row[cIdx] === 'number';
+
+                        // 判斷是否為「小計列 (主管)」
+                        const isParent = parentKws.some(kw => nameVal.includes(kw));
+                        // 判斷是否為「總計列」
+                        const isTotal = totalKws.some(kw => nameVal.includes(kw));
+
+                        if (isParent) {
+                            // 這裡進行驗算：比較 (累計的細項) vs (目前這行的主管數值)
+                            // 注意：只有當這行真的是數字才驗算
+                            if (isNumber) {
+                                checkVal(r, cIdx, tempGroupSum, cellVal);
+                            }
+                            // 歸零，準備下一個群組
+                            tempGroupSum = 0; 
+                        } 
+                        else if (isTotal) {
+                            // 總計列通常比較複雜(可能是所有細項加總，也可能是所有主管加總)
+                            // 簡易版我們先跳過總計的驗算，或者重置計數
+                            tempGroupSum = 0;
+                        } 
+                        else {
+                            // 這是一般細項，加入累計
+                            // 只有當這格是數字，或者不為空時才加
+                            if (isNumber) {
+                                tempGroupSum += cellVal;
+                            }
+                        }
+                    }
+                });
             }
 
             renderGrid();
-            if (lastErrors.size === 0) alert("✅ 驗算成功！");
-            else alert(`⚠️ 發現 ${lastErrors.size} 個錯誤`);
+            if (lastErrors.size === 0) alert("✅ 驗算成功！數據正確。");
+            else alert(`⚠️ 發現 ${lastErrors.size} 個計算錯誤，已標示紅色。`);
         }
 
         function checkVal(r, c, calculated, current) {
             if (Math.abs(calculated - current) > 0.01) {
                 const key = r * 10000 + c;
                 const diff = (current - calculated).toFixed(2);
-                lastErrors.set(key, `應為 ${calculated.toLocaleString()} (差 ${diff})`);
+                lastErrors.set(key, `算錯! 應為 ${calculated.toLocaleString()} (差 ${diff})`);
                 correctionMap.set(key, calculated);
             }
         }
 
-        // === 匯出報告 (包含正確值) ===
+        // 匯出功能
         function exportFullReport() {
-            if (correctionMap.size === 0 && lastErrors.size === 0) {
-                alert("請先執行驗算，或目前沒有錯誤可匯出。"); return;
-            }
-            
+            if (correctionMap.size === 0 && lastErrors.size === 0) { alert("無錯誤可匯出"); return; }
             const wb = XLSX.utils.book_new();
             
-            // 1. 原始
+            // 原始
             XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheetData), "原始資料");
-
-            // 2. 修正後
-            const correctedData = JSON.parse(JSON.stringify(sheetData)); // Deep copy
-            correctionMap.forEach((val, key) => {
-                const r = Math.floor(key / 10000);
-                const c = key % 10000;
-                if(correctedData[r]) correctedData[r][c] = val;
+            
+            // 修正
+            const fixedData = JSON.parse(JSON.stringify(sheetData));
+            correctionMap.forEach((v, k) => {
+                const r = Math.floor(k/10000), c = k%10000;
+                if(fixedData[r]) fixedData[r][c] = v;
             });
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(correctedData), "建議修正");
-
-            // 3. 差異表
-            const diffData = sheetData.map((row, r) => row.map((cell, c) => {
-                const key = r * 10000 + c;
-                return correctionMap.has(key) ? (parseFloat(cell)||0) - correctionMap.get(key) : 0;
-            }));
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(diffData), "差異分析");
-
-            XLSX.writeFile(wb, "驗算報告.xlsx");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(fixedData), "建議修正值");
+            
+            XLSX.writeFile(wb, "財務稽核報告.xlsx");
         }
     </script>
 </body>
