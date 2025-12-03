@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel 驗算大師 (HTML 報告版)</title>
+    <title>Excel 驗算大師 (拖曳版)</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -16,12 +16,12 @@
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0; padding: 20px; background: var(--bg); color: #334155;
-            height: 100vh; display: flex; flex-direction: column;
+            height: 100vh; display: flex; flex-direction: column; position: relative;
         }
         /* Header */
         .header-panel {
             background: white; padding: 15px 20px; border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; flex-shrink: 0; z-index: 10;
         }
         .toolbar { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         .control-group { display: flex; flex-direction: column; gap: 4px; }
@@ -43,7 +43,7 @@
         /* 表格區 */
         #grid-container {
             flex-grow: 1; overflow: auto; background: white;
-            border: 1px solid #cbd5e1; border-radius: 8px;
+            border: 1px solid #cbd5e1; border-radius: 8px; z-index: 5;
         }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
         th, td {
@@ -74,15 +74,38 @@
             display: flex; align-items: center; gap: 10px;
         }
         .logic-tag { padding: 2px 6px; border-radius: 4px; font-weight: bold; color: white; margin: 0 2px; }
+
+        /* 拖曳遮罩 (新增) */
+        #drop-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(37, 99, 235, 0.95); z-index: 5000;
+            display: none; justify-content: center; align-items: center;
+            flex-direction: column; color: white; backdrop-filter: blur(5px);
+            border: 8px dashed rgba(255,255,255,0.4); margin: 15px; border-radius: 20px;
+        }
+        #drop-overlay h3 { font-size: 2rem; margin: 0 0 10px 0; pointer-events: none; }
+        #drop-overlay p { font-size: 1.2rem; opacity: 0.8; pointer-events: none; }
+
+        /* Loading */
+        #loading {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 8px;
+            display: none; z-index: 4000;
+        }
     </style>
 </head>
 <body>
 
+    <div id="drop-overlay">
+        <h3>📂 放開滑鼠以載入檔案</h3>
+        <p>支援 .xlsx, .xls 格式</p>
+    </div>
+
     <div class="header-panel">
-        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(HTML 報告版)</small></h2>
+        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(HTML報告+拖曳支援)</small></h2>
         
         <div class="toolbar">
-            <button class="btn" onclick="document.getElementById('fileElem').click()">📁 上傳 Excel</button>
+            <button class="btn" onclick="document.getElementById('fileElem').click()">📁 選擇或拖曳 Excel</button>
             <input type="file" id="fileElem" accept=".xlsx, .xls" style="display:none">
             
             <div class="control-group" id="sheetControl" style="display:none;">
@@ -125,7 +148,7 @@
     </div>
 
     <div id="grid-container"></div>
-    <div id="loading" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); color:white; padding:20px; border-radius:8px;">處理中...</div>
+    <div id="loading">處理中...</div>
 
     <script>
         let workbook = null, sheetData = [], headers = [];
@@ -133,27 +156,55 @@
         let lastErrors = new Map();
         let correctionMap = new Map();
 
-        // 檔案上傳
-        document.getElementById('fileElem').addEventListener('change', (e) => {
+        // === 拖曳與檔案處理 ===
+        const fileElem = document.getElementById('fileElem');
+        const overlay = document.getElementById('drop-overlay');
+
+        // 監聽按鈕上傳
+        fileElem.addEventListener('change', (e) => {
             if(e.target.files[0]) processFile(e.target.files[0]);
+        });
+
+        // 監聽全域拖曳
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            overlay.style.display = 'flex';
+        });
+
+        // 離開遮罩時隱藏 (只在離開遮罩本體時觸發)
+        overlay.addEventListener('dragleave', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            overlay.style.display = 'none';
+        });
+
+        // 放開滑鼠 (Drop)
+        overlay.addEventListener('drop', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            overlay.style.display = 'none';
+            if(e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
         });
 
         function processFile(file) {
             document.getElementById('loading').style.display = 'block';
             const reader = new FileReader();
             reader.onload = (e) => {
-                const data = new Uint8Array(e.target.result);
-                workbook = XLSX.read(data, {type: 'array'});
-                const sheetSel = document.getElementById('sheetSelector');
-                sheetSel.innerHTML = '';
-                workbook.SheetNames.forEach(name => {
-                    let opt = document.createElement('option');
-                    opt.value = opt.textContent = name;
-                    sheetSel.appendChild(opt);
-                });
-                document.getElementById('sheetControl').style.display = 'flex';
-                loadSheet(workbook.SheetNames[0]);
-                document.getElementById('loading').style.display = 'none';
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, {type: 'array'});
+                    const sheetSel = document.getElementById('sheetSelector');
+                    sheetSel.innerHTML = '';
+                    workbook.SheetNames.forEach(name => {
+                        let opt = document.createElement('option');
+                        opt.value = opt.textContent = name;
+                        sheetSel.appendChild(opt);
+                    });
+                    document.getElementById('sheetControl').style.display = 'flex';
+                    loadSheet(workbook.SheetNames[0]);
+                } catch(err) {
+                    alert("讀取檔案失敗：" + err.message);
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -166,14 +217,14 @@
             renderGrid();
         }
 
-        // 渲染表格
+        // === 渲染與互動 ===
         function renderGrid() {
             const gridDiv = document.getElementById('grid-container');
             const hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
             const mode = document.getElementById('calcMode').value;
 
             if (!sheetData || sheetData.length <= hRowIdx) {
-                gridDiv.innerHTML = '<div style="padding:20px;">請先上傳檔案。</div>';
+                gridDiv.innerHTML = '<div style="padding:20px; color:#64748b;">請拖曳或上傳 Excel 檔案以開始。</div>';
                 return;
             }
 
@@ -235,7 +286,7 @@
                         if (mode !== 'vertical_row' && selectedIndices.includes(c)) style = 'background:#f0f9ff;';
                         if (mode === 'vertical_row' && selectedIndices.includes(r)) style = 'background:#f0f9ff;';
                         
-                        // 縮排視覺處理
+                        // 縮排視覺
                         if (mode === 'vertical_indent' && selectedIndices.includes(c) && typeof val === 'string') {
                             const spaces = countLeadingSpaces(val);
                             if(spaces > 0) style += `padding-left: ${spaces * 6 + 8}px; color:#475569;`;
@@ -251,7 +302,6 @@
             updateLogicText();
         }
 
-        // 互動邏輯
         function modeChanged() {
             selectedIndices = [];
             lastErrors.clear();
@@ -387,18 +437,16 @@
             }
         }
 
-        // === 新功能：產生 HTML 報告 ===
+        // === HTML 報告匯出 ===
         function exportHTMLReport() {
             if (correctionMap.size === 0 && lastErrors.size === 0) { alert("無錯誤可匯出"); return; }
             
-            // 準備數據
             const correctedData = JSON.parse(JSON.stringify(sheetData));
             correctionMap.forEach((v,k)=>{
                 const r=Math.floor(k/10000), c=k%10000;
                 if(correctedData[r]) correctedData[r][c]=v;
             });
 
-            // 產生 HTML 字串
             let htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -421,25 +469,15 @@
             <body>
                 <h1>📑 財務驗算稽核報告</h1>
                 <div class="info">
-                    <strong>檔案名稱：</strong> ${document.getElementById('fileElem').files[0] ? document.getElementById('fileElem').files[0].name : '未知'} <br>
-                    <strong>產生時間：</strong> ${new Date().toLocaleString()} <br>
-                    <strong>發現錯誤數：</strong> ${lastErrors.size} 筆
+                    <strong>發現錯誤數：</strong> ${lastErrors.size} 筆 <br>
+                    <strong>產生時間：</strong> ${new Date().toLocaleString()}
                 </div>
-
                 <h2>1. 🔴 原始資料 (錯誤標示)</h2>
-                <div class="section">
-                    ${generateTableHTML(sheetData, 'original')}
-                </div>
-
+                <div class="section">${generateTableHTML(sheetData, 'original')}</div>
                 <h2>2. 🟢 建議修正 (正確數值)</h2>
-                <div class="section">
-                    ${generateTableHTML(correctedData, 'corrected')}
-                </div>
-
+                <div class="section">${generateTableHTML(correctedData, 'corrected')}</div>
                 <h2>3. 🔵 差異分析 (原始 - 正確)</h2>
-                <div class="section">
-                    ${generateDiffTableHTML(sheetData, correctedData)}
-                </div>
+                <div class="section">${generateDiffTableHTML(sheetData, correctedData)}</div>
             </body>
             </html>`;
 
@@ -453,17 +491,14 @@
             document.body.removeChild(a);
         }
 
-        // 輔助：產生一般表格 HTML
         function generateTableHTML(data, type) {
             const hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
             let html = '<table><thead><tr>';
-            // 標題列
             if(data[hRowIdx]) {
                 html += '<th>列</th>';
                 data[hRowIdx].forEach(h => html += `<th>${h || ''}</th>`);
             }
             html += '</tr></thead><tbody>';
-            // 內容
             for (let r = hRowIdx + 1; r < data.length; r++) {
                 const row = data[r];
                 if (!row) continue;
@@ -473,10 +508,8 @@
                     const val = row[c];
                     const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     let cls = '';
-                    
                     if (type === 'original' && lastErrors.has(key)) cls = 'err';
                     if (type === 'corrected' && correctionMap.has(key)) cls = 'fixed';
-
                     html += `<td class="${cls}">${display}</td>`;
                 }
                 html += '</tr>';
@@ -485,7 +518,6 @@
             return html;
         }
 
-        // 輔助：產生差異表格 HTML
         function generateDiffTableHTML(orig, fixed) {
             const hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
             let html = '<table><thead><tr>';
@@ -494,22 +526,16 @@
                 orig[hRowIdx].forEach(h => html += `<th>${h || ''}</th>`);
             }
             html += '</tr></thead><tbody>';
-            
             for (let r = hRowIdx + 1; r < orig.length; r++) {
                 html += `<tr><td>${r+1}</td>`;
                 for (let c = 0; c < headers.length; c++) {
                     const key = r * 10000 + c;
-                    let content = '';
-                    let cls = '';
-                    
+                    let content = '-';
+                    let cls = 'text-gray';
                     if (correctionMap.has(key)) {
                         const diff = (parseFloat(orig[r][c])||0) - (parseFloat(fixed[r][c])||0);
                         content = diff.toLocaleString(undefined, { minimumFractionDigits: 2 });
                         cls = 'diff';
-                    } else {
-                        // 若無錯誤，顯示 0 或空
-                        content = (typeof orig[r][c] === 'number') ? '-' : (orig[r][c] || '');
-                        cls = 'text-gray';
                     }
                     html += `<td class="${cls}">${content}</td>`;
                 }
