@@ -1,0 +1,728 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>excel驗算器(檢誤表生成版)</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --err: #dc2626;
+            --ok: #16a34a;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--bg);
+            color: #334155;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        /* 頂部區域 */
+        .header-panel {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.3rem;
+            color: #1e293b;
+        }
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+        select, input {
+            padding: 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+            color: white;
+            background: var(--primary);
+        }
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+        .btn-check {
+            background: #059669;
+        }
+        .btn-check:hover {
+            background: #047857;
+        }
+        /* 邏輯設定區 */
+        .logic-panel {
+            background: #eff6ff;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #bfdbfe;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        .logic-tag {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #93c5fd;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        /* 網格 */
+        #grid-container {
+            flex-grow: 1;
+            overflow: auto;
+            background: white;
+            border: 1px solid #cbd5e1;
+            position: relative;
+            border-radius: 8px;
+            -webkit-overflow-scrolling: touch;
+            z-index: 5;
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        th, td {
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 6px 8px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .sticky-header th {
+            background: #f1f5f9;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+            color: #475569;
+            border-bottom: 2px solid #cbd5e1;
+        }
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background: #f8fafc;
+            z-index: 5;
+            border-right: 2px solid #cbd5e1;
+            font-weight: 600;
+        }
+        /* 錯誤標示 */
+        .err-cell {
+            background-color: #fef2f2 !important;
+            color: #991b1b;
+            font-weight: bold;
+            border: 2px solid #ef4444 !important;
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+        .err-cell::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            border-top: 8px solid #ef4444;
+            border-left: 8px solid transparent;
+        }
+        .err-msg {
+            display: block;
+            font-size: 10px;
+            color: #dc2626;
+            margin-top: 2px;
+            font-weight: normal;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(239,68,68,0.2); }
+        }
+        /* 選取狀態 */
+        .col-selected {
+            background-color: #dbeafe !important;
+            border-bottom: 2px solid var(--primary) !important;
+        }
+        /* 提示訊息 */
+        .info-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #166534;
+        }
+        /* Loading */
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            display: none;
+            z-index: 3000;
+        }
+        /* 拖曳遮罩 */
+        #drop-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(37, 99, 235, 0.9);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            border: 8px dashed rgba(255,255,255,0.5);
+            margin: 10px;
+            border-radius: 12px;
+            backdrop-filter: blur(2px);
+        }
+        #drop-overlay h3 {
+            font-size: 2rem;
+            margin: 0; pointer-events: none;
+        }
+        #drop-overlay p {
+            font-size: 1.2rem; opacity: 0.8; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="drop-overlay">
+        <h3>📂 放開滑鼠以載入檔案</h3>
+        <p>支援 .xlsx, .xls 格式</p>
+    </div>
+
+    <div class="header-panel">
+        <h2>📊 excel驗算器(檢誤表生成版) <small style="font-size:0.8rem; color:#64748b; font-weight:normal;">(含完整檢誤報告)</small></h2>
+        <div class="toolbar">
+            <button class="btn" onclick="document.getElementById('fileElem').click()">📁 1. 上傳 / 拖曳 Excel</button>
+            <input type="file" id="fileElem" accept=".xlsx, .xls" style="display:none">
+            
+            <div class="control-group" id="sheetControl" style="display:none;">
+                <label>選擇工作表</label>
+                <select id="sheetSelector" onchange="switchSheet(this.value)" style="min-width: 150px; border-color: #2563eb; background: #eff6ff;">
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>資料標題列</label>
+                <input type="number" id="headerRow" value="3" min="1" style="width: 70px;">
+            </div>
+            <div class="control-group">
+                <label>資料結束列</label>
+                <input type="number" id="endRow" value="" min="1" placeholder="自動" style="width: 70px;">
+            </div>
+            <button class="btn" style="background:#8b5cf6; padding:6px 12px;" onclick="applyRange()">🔄 套用範圍</button>
+            <div style="border-left: 2px solid #e2e8f0; padding-left: 15px;"></div>
+            <div class="control-group">
+                <label>設定驗算邏輯</label>
+                <div style="display:flex; gap:5px;">
+                    <select id="calcMode" onchange="modeChanged()">
+                        <option value="horizontal">橫向 (A + B = C)</option>
+                        <option value="vertical">縱向 (主管 = Σ基金)</option>
+                    </select>
+                    <button class="btn btn-check" onclick="runCheck()">✓ 執行驗算</button>
+                </div>
+            </div>
+            <div class="control-group" id="verticalOptions" style="display:none;">
+                <label>數值欄位範圍</label>
+                <div style="display:flex; gap:5px;">
+                    <label style="display:flex; align-items:center; gap:4px; font-weight:normal; cursor:pointer;">
+                        <input type="radio" name="verticalMode" value="single" checked onchange="updateVerticalMode()"> 單一欄位
+                    </label>
+                    <label style="display:flex; align-items:center; gap:4px; font-weight:normal; cursor:pointer;">
+                        <input type="radio" name="verticalMode" value="all" onchange="updateVerticalMode()"> 全部數值欄
+                    </label>
+                </div>
+                <div style="margin-top:5px;">
+                    <label>主管關鍵字</label>
+                    <input type="text" id="parentKeywords" value="主管" style="width:120px;">
+                </div>
+                <div>
+                    <label>總計關鍵字</label>
+                    <input type="text" id="totalKeywords" value="合計,總計" style="width:120px;">
+                </div>
+            </div>
+            <div style="flex-grow:1; text-align:right;">
+                <!-- 更新按鈕文字以反映新功能 -->
+                <button class="btn" style="background:#dc2626;" onclick="exportFullReport()">📑 下載完整檢誤報告</button>
+                <button class="btn" style="background:#64748b;" onclick="reset()">↺ 重置</button>
+            </div>
+        </div>
+        <div id="logicDisplay" class="logic-panel" style="display:none;">
+            <span style="font-weight:600;">目前邏輯：</span>
+            <span id="logicText">請點擊標題欄位來設定...</span>
+        </div>
+        <div class="info-box" style="display:none;" id="infoBox">
+            <strong>💡 使用說明：</strong>
+            <div style="margin-top:5px;">
+                1. <strong>載入檔案</strong>：拖曳或上傳 Excel。<br>
+                2. <strong>執行驗算</strong>：設定邏輯後點擊「執行驗算」。<br>
+                3. <strong>下載報告</strong>：點擊紅色「下載完整檢誤報告」按鈕，將產生包含 <strong>[原始]、[重算]、[差異]</strong> 三個工作表的 Excel 檔。
+            </div>
+        </div>
+    </div>
+    <div id="grid-container"></div>
+    <div id="loading">正在處理中...</div>
+    <script>
+        let workbook = null;
+        let sheetData = []; 
+        let headers = []; 
+        let selectedCols = []; 
+        let lastErrors = new Map(); // 儲存錯誤訊息 (UI用)
+        let correctionMap = new Map(); // 新增：儲存正確數值 (報表用)
+
+        const fileElem = document.getElementById('fileElem');
+        const gridDiv = document.getElementById('grid-container');
+        const logicDisplay = document.getElementById('logicDisplay');
+        const logicText = document.getElementById('logicText');
+        const loading = document.getElementById('loading');
+        const infoBox = document.getElementById('infoBox');
+        const sheetControl = document.getElementById('sheetControl');
+        const sheetSelector = document.getElementById('sheetSelector');
+        const dropOverlay = document.getElementById('drop-overlay');
+
+        // === 檔案處理與拖曳邏輯 ===
+        fileElem.addEventListener('change', function(e) {
+            if (e.target.files[0]) processFile(e.target.files[0]);
+        });
+
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            dropOverlay.style.display = 'flex';
+        });
+
+        dropOverlay.addEventListener('dragleave', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            dropOverlay.style.display = 'none';
+        });
+
+        dropOverlay.addEventListener('drop', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            dropOverlay.style.display = 'none';
+            if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
+        });
+
+        function processFile(file) {
+            loading.style.display = 'block';
+            sheetControl.style.display = 'none';
+            sheetSelector.innerHTML = '';
+            
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    workbook = XLSX.read(data, {type: 'array'});
+                    
+                    if (workbook.SheetNames.length === 0) throw new Error("無工作表");
+
+                    workbook.SheetNames.forEach(name => {
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        sheetSelector.appendChild(option);
+                    });
+                    sheetControl.style.display = 'flex';
+                    loadSheet(workbook.SheetNames[0]);
+                    infoBox.style.display = 'block';
+                } catch(err) {
+                    alert('讀取失敗：' + err.message);
+                } finally {
+                    loading.style.display = 'none';
+                    fileElem.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function switchSheet(sheetName) {
+            loading.style.display = 'block';
+            setTimeout(() => {
+                reset(); 
+                loadSheet(sheetName);
+                loading.style.display = 'none';
+            }, 50);
+        }
+
+        function loadSheet(sheetName) {
+            const ws = workbook.Sheets[sheetName];
+            sheetData = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
+            document.getElementById('endRow').value = ''; 
+            renderGrid();
+        }
+
+        function applyRange() {
+            if (!sheetData || sheetData.length === 0) {
+                alert('⚠️ 請先上傳檔案！');
+                return;
+            }
+            lastErrors = new Map();
+            correctionMap = new Map();
+            selectedCols = [];
+            logicDisplay.style.display = 'none';
+            renderGrid();
+        }
+
+        function getDataRange() {
+            const headerRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
+            const endRowInput = document.getElementById('endRow').value;
+            const endRowIdx = endRowInput ? parseInt(endRowInput) - 1 : sheetData.length - 1;
+            return { start: headerRowIdx, end: Math.min(endRowIdx, sheetData.length - 1) };
+        }
+
+        let renderTimer;
+        function renderGrid(errors = new Map()) {
+            if (renderTimer) return;
+            renderTimer = requestAnimationFrame(() => {
+                const headerRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
+                const range = getDataRange();
+                
+                if (!sheetData || sheetData.length <= headerRowIdx) {
+                    gridDiv.innerHTML = '<div style="padding:20px; color:#64748b;">資料不足或範圍設定錯誤。</div>';
+                    renderTimer = null;
+                    return;
+                }
+
+                headers = sheetData[headerRowIdx];
+                if (!headers) {
+                    gridDiv.innerHTML = '<div style="padding:20px; color:#dc2626;">無法讀取標題列。</div>';
+                    renderTimer = null;
+                    return;
+                }
+
+                let html = '<table id="dataTable"><thead><tr class="sticky-header">';
+                html += '<th class="sticky-col">列</th>'; 
+                headers.forEach((h, i) => {
+                    const isSelected = selectedCols.includes(i);
+                    const badge = isSelected ? `<span style="background:${getBadgeColor(i)}; color:white; padding:2px 6px; border-radius:3px; font-size:10px; margin-right:4px;">${getBadgeLabel(i)}</span>` : '';
+                    const cleanHeader = (h || `Col ${XLSX.utils.encode_col(i)}`).toString().replace(/\r\n|\n/g, ' ');
+                    html += `<th class="${isSelected ? 'col-selected' : ''}" onclick="toggleCol(${i})" style="cursor:pointer;" title="選取"> ${badge}${cleanHeader} </th>`;
+                });
+                html += '</tr></thead><tbody>';
+                
+                for (let r = headerRowIdx + 1; r <= range.end; r++) {
+                    const row = sheetData[r];
+                    if (!row) continue;
+                    if (row.every(cell => !cell && cell !== 0)) continue;
+                    html += `<tr><td class="sticky-col">${r + 1}</td>`;
+                    for (let c = 0; c < headers.length; c++) {
+                        const val = row[c];
+                        const displayVal = (typeof val === 'number') ? val.toLocaleString() : (val || '');
+                        const errKey = r * 10000 + c;
+                        const err = errors.get(errKey);
+                        if (err) {
+                            html += `<td class="err-cell">${displayVal}<span class="err-msg">${err}</span></td>`;
+                        } else {
+                            html += `<td>${displayVal}</td>`;
+                        }
+                    }
+                    html += '</tr>';
+                }
+                html += '</tbody></table>';
+                gridDiv.innerHTML = html;
+                
+                const totalRows = Math.max(0, range.end - headerRowIdx);
+                const currentSheet = sheetSelector.value || '未選擇';
+                const statusDiv = document.getElementById('rangeStatus') || document.createElement('div');
+                statusDiv.id = 'rangeStatus';
+                statusDiv.style.cssText = 'padding:8px 12px; background:#f1f5f9; border-top:1px solid #cbd5e1; font-size:0.85rem; color:#64748b;';
+                statusDiv.textContent = `📋 ${currentSheet} | 範圍：${headerRowIdx + 2}~${range.end + 1}列 (${totalRows}筆)`;
+                if(!document.getElementById('rangeStatus')) gridDiv.parentElement.appendChild(statusDiv);
+                
+                renderTimer = null;
+            });
+        }
+
+        // === 邏輯選取功能 ===
+        function toggleCol(idx) {
+            const mode = document.getElementById('calcMode').value;
+            if (mode === 'horizontal') {
+                const p = selectedCols.indexOf(idx);
+                if (p > -1) selectedCols.splice(p, 1);
+                else selectedCols.push(idx);
+                updateLogicTextH();
+            } else {
+                const verticalMode = document.querySelector('input[name="verticalMode"]:checked').value;
+                if (verticalMode === 'single') {
+                    if (selectedCols.length >= 2) selectedCols = [];
+                    selectedCols.push(idx);
+                } else {
+                    if (selectedCols.length >= 1) selectedCols = [];
+                    selectedCols.push(idx);
+                }
+                updateLogicTextV();
+            }
+            renderGrid();
+        }
+
+        function modeChanged() {
+            selectedCols = [];
+            logicDisplay.style.display = 'none';
+            const mode = document.getElementById('calcMode').value;
+            document.getElementById('verticalOptions').style.display = (mode === 'vertical') ? 'flex' : 'none';
+            renderGrid();
+        }
+
+        function updateVerticalMode() {
+            selectedCols = [];
+            logicDisplay.style.display = 'none';
+            renderGrid();
+        }
+
+        function getBadgeColor(idx) {
+            const pos = selectedCols.indexOf(idx);
+            if (pos === -1) return '';
+            if (document.getElementById('calcMode').value === 'horizontal') {
+                return (pos === selectedCols.length - 1 && selectedCols.length > 1) ? '#16a34a' : '#2563eb';
+            }
+            return (pos === 0) ? '#f59e0b' : '#8b5cf6';
+        }
+
+        function getBadgeLabel(idx) {
+            const pos = selectedCols.indexOf(idx);
+            if (document.getElementById('calcMode').value === 'horizontal') {
+                if (selectedCols.length < 2) return `+${pos+1}`;
+                return (pos === selectedCols.length - 1) ? '=' : '+';
+            }
+            return (pos === 0) ? '名稱' : '數值';
+        }
+
+        function updateLogicTextH() {
+            logicDisplay.style.display = 'flex';
+            if (selectedCols.length < 2) {
+                logicText.innerHTML = "請至少選擇兩個欄位...";
+                return;
+            }
+            const inputs = selectedCols.slice(0, -1).map(i => `<span class="logic-tag">${headers[i]||'Col'+i}</span>`).join(' + ');
+            const output = headers[selectedCols[selectedCols.length-1]];
+            logicText.innerHTML = `驗算邏輯： ${inputs} = <span class="logic-tag" style="background:#dcfce7; color:#16a34a;">${output}</span>`;
+        }
+
+        function updateLogicTextV() {
+            logicDisplay.style.display = 'flex';
+            const verticalMode = document.querySelector('input[name="verticalMode"]:checked').value;
+            if (selectedCols.length < 1) {
+                logicText.innerHTML = "請點選單位名稱欄...";
+                return;
+            }
+            const nameCol = headers[selectedCols[0]];
+            if (verticalMode === 'single' && selectedCols.length < 2) {
+                logicText.innerHTML = `依據 <span class="logic-tag">${nameCol}</span> 分組，請再點選數值欄...`;
+                return;
+            }
+            const target = (verticalMode === 'single') ? headers[selectedCols[1]] : "所有數值欄";
+            logicText.innerHTML = `驗算邏輯：檢查 <strong>${target}</strong>，主管是否等於基金加總 (依 <span class="logic-tag" style="background:#fef3c7; color:#f59e0b;">${nameCol}</span> 分組)`;
+        }
+
+        // === 核心驗算引擎 (更新版：紀錄正確數值) ===
+        function runCheck() {
+            const mode = document.getElementById('calcMode').value;
+            const verticalMode = document.querySelector('input[name="verticalMode"]:checked').value;
+            // 驗證輸入
+            if (mode === 'horizontal' && selectedCols.length < 2) { alert("請至少選擇 2 個欄位！"); return; }
+            if (mode === 'vertical' && verticalMode === 'single' && selectedCols.length < 2) { alert("請選擇名稱與數值欄位！"); return; }
+            if (mode === 'vertical' && verticalMode === 'all' && selectedCols.length < 1) { alert("請選擇單位名稱欄！"); return; }
+
+            loading.style.display = 'block';
+            setTimeout(() => {
+                lastErrors = new Map();
+                correctionMap = new Map(); // 重置正確數值表
+                const range = getDataRange();
+                const headerRowIdx = range.start;
+
+                if (mode === 'horizontal') {
+                    const resultIdx = selectedCols[selectedCols.length - 1];
+                    const inputIndices = selectedCols.slice(0, -1);
+                    for (let r = headerRowIdx + 1; r <= range.end; r++) {
+                        const row = sheetData[r];
+                        if (!row) continue;
+                        if (!row[resultIdx] && row[resultIdx] !== 0) continue;
+                        let sum = 0;
+                        inputIndices.forEach(idx => {
+                            const val = parseFloat(row[idx]);
+                            if (!isNaN(val)) sum += val;
+                        });
+                        const target = parseFloat(row[resultIdx]);
+                        // 容許 0.01 誤差
+                        if (!isNaN(target) && Math.abs(sum - target) > 0.01) {
+                            const diff = (target - sum).toFixed(2);
+                            const key = r * 10000 + resultIdx;
+                            lastErrors.set(key, `❌ 算錯! 應為 ${sum.toLocaleString()} (差額: ${diff})`);
+                            correctionMap.set(key, sum); // 紀錄正確值
+                        }
+                    }
+                } else if (mode === 'vertical') {
+                    const nameIdx = selectedCols[0];
+                    const parentKws = document.getElementById('parentKeywords').value.split(',').map(k => k.trim());
+                    const totalKws = document.getElementById('totalKeywords').value.split(',').map(k => k.trim());
+                    let valueIndices = [];
+                    
+                    if (verticalMode === 'single') valueIndices = [selectedCols[1]];
+                    else {
+                        for (let c = 0; c < headers.length; c++) {
+                            if (c === nameIdx) continue;
+                            let hasNumber = false;
+                            for (let r = headerRowIdx + 1; r <= Math.min(headerRowIdx + 10, range.end); r++) {
+                                const val = sheetData[r] ? sheetData[r][c] : null;
+                                if (typeof val === 'number' || (!isNaN(parseFloat(val)) && val !== '')) {
+                                    hasNumber = true; break;
+                                }
+                            }
+                            if (hasNumber) valueIndices.push(c);
+                        }
+                    }
+
+                    valueIndices.forEach(valIdx => {
+                        const parentRows = [];
+                        let totalRow = -1;
+                        // 1. 識別結構
+                        for (let r = headerRowIdx + 1; r <= range.end; r++) {
+                            const row = sheetData[r];
+                            if (!row) continue;
+                            const name = String(row[nameIdx] || "").trim();
+                            if (totalKws.some(kw => name.includes(kw))) totalRow = r;
+                            else if (parentKws.some(kw => name.includes(kw))) {
+                                parentRows.push({r: r, name: name, childrenSum: 0});
+                            }
+                        }
+                        // 2. 加總與比對
+                        for (let i = 0; i < parentRows.length; i++) {
+                            const p = parentRows[i];
+                            const nextP = parentRows[i+1] ? parentRows[i+1].r : (totalRow !== -1 ? totalRow : range.end + 1);
+                            for (let r = p.r + 1; r < nextP; r++) {
+                                if (r > range.end) break;
+                                const row = sheetData[r];
+                                if (!row) continue;
+                                const name = String(row[nameIdx] || "").trim();
+                                if (name === '' || parentKws.some(kw => name.includes(kw)) || totalKws.some(kw => name.includes(kw))) continue;
+                                const val = parseFloat(row[valIdx]);
+                                if (!isNaN(val)) p.childrenSum += val;
+                            }
+                            const currentParentVal = parseFloat(sheetData[p.r][valIdx]);
+                            if (!isNaN(currentParentVal) && Math.abs(currentParentVal - p.childrenSum) > 0.01) {
+                                const diff = (currentParentVal - p.childrenSum).toFixed(2);
+                                const key = p.r * 10000 + valIdx;
+                                lastErrors.set(key, `❌ 勾稽錯誤! 加總應為 ${p.childrenSum.toLocaleString()} (差額: ${diff})`);
+                                correctionMap.set(key, p.childrenSum); // 紀錄正確值
+                            }
+                        }
+                        // 3. 總計比對
+                        if (totalRow !== -1 && totalRow <= range.end) {
+                            let allParentSum = 0;
+                            parentRows.forEach(p => allParentSum += (parseFloat(sheetData[p.r][valIdx]) || 0));
+                            const currentTotal = parseFloat(sheetData[totalRow][valIdx]);
+                            if (!isNaN(currentTotal) && Math.abs(currentTotal - allParentSum) > 0.01) {
+                                const diff = (currentTotal - allParentSum).toFixed(2);
+                                const key = totalRow * 10000 + valIdx;
+                                lastErrors.set(key, `❌ 總計錯誤! 應為 ${allParentSum.toLocaleString()} (差額: ${diff})`);
+                                correctionMap.set(key, allParentSum); // 紀錄正確值
+                            }
+                        }
+                    });
+                }
+                renderGrid(lastErrors);
+                loading.style.display = 'none';
+                if (lastErrors.size === 0) alert("✅ 驗算成功！所有數字皆正確。");
+                else alert(`⚠️ 發現 ${lastErrors.size} 個錯誤，已標示並可匯出報告。`);
+            }, 100);
+        }
+
+        function reset() {
+            selectedCols = [];
+            logicDisplay.style.display = 'none';
+            lastErrors = new Map();
+            correctionMap = new Map();
+            renderGrid();
+        }
+
+        // === 新版匯出功能：產生 3 個 Sheet ===
+        function exportFullReport() {
+            if (!sheetData || sheetData.length === 0) {
+                alert("無資料可匯出"); return;
+            }
+
+            loading.style.display = 'block';
+            setTimeout(() => {
+                const wb = XLSX.utils.book_new();
+                const sheetName = sheetSelector.value || "Sheet1";
+
+                // 1. 原始匯入頁面 (Original)
+                // 直接使用目前的 sheetData
+                const wsOriginal = XLSX.utils.aoa_to_sheet(sheetData);
+                XLSX.utils.book_append_sheet(wb, wsOriginal, "原始資料");
+
+                // 2. 重新計算過的頁面 (Corrected)
+                // 複製 sheetData，並將錯誤欄位替換為 correctionMap 的值
+                const correctedData = sheetData.map(row => [...row]); // Deep copy rows
+                correctionMap.forEach((correctVal, key) => {
+                    const r = Math.floor(key / 10000);
+                    const c = key % 10000;
+                    if (correctedData[r]) correctedData[r][c] = correctVal;
+                });
+                const wsCorrected = XLSX.utils.aoa_to_sheet(correctedData);
+                XLSX.utils.book_append_sheet(wb, wsCorrected, "正確數值");
+
+                // 3. 2者相差之結果 (Difference)
+                // 建立一個新的陣列，只填入差異值 (原始 - 正確)
+                // 如果是 0 或沒錯，就填入 0 或空值
+                const diffData = sheetData.map((row, r) => {
+                    return row.map((cell, c) => {
+                        const key = r * 10000 + c;
+                        if (correctionMap.has(key)) {
+                            const original = parseFloat(cell) || 0;
+                            const correct = correctionMap.get(key);
+                            // 差異 = 原始 - 正確 (正數表示原始值偏大，負數表示原始值偏小)
+                            return original - correct; 
+                        }
+                        // 標題列保持原樣，其他如果是數值填0，文字填原字
+                        if (r < parseInt(document.getElementById('headerRow').value)) return cell;
+                        return (typeof cell === 'number') ? 0 : cell;
+                    });
+                });
+                const wsDiff = XLSX.utils.aoa_to_sheet(diffData);
+                XLSX.utils.book_append_sheet(wb, wsDiff, "差異分析");
+
+                // 匯出檔案
+                XLSX.writeFile(wb, `財務稽核報告_${sheetName}_完整版.xlsx`);
+                loading.style.display = 'none';
+            }, 100);
+        }
+    </script>
+</body>
+</html>
