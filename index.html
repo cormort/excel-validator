@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel 驗算大師 (拖曳版)</title>
+    <title>Excel 驗算大師 (全能版)</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -38,7 +38,8 @@
             background: #fff7ed; padding: 8px 12px; border-radius: 6px;
             border: 1px solid #fed7aa; display: flex; gap: 10px; align-items: flex-end;
         }
-        .keyword-panel input { border-color: #f97316; width: 150px; }
+        .keyword-panel input { border-color: #f97316; width: 140px; }
+        .kw-label { color: #c2410c; }
 
         /* 表格區 */
         #grid-container {
@@ -75,7 +76,7 @@
         }
         .logic-tag { padding: 2px 6px; border-radius: 4px; font-weight: bold; color: white; margin: 0 2px; }
 
-        /* 拖曳遮罩 (新增) */
+        /* 拖曳遮罩 */
         #drop-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(37, 99, 235, 0.95); z-index: 5000;
@@ -102,7 +103,7 @@
     </div>
 
     <div class="header-panel">
-        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(HTML報告+拖曳支援)</small></h2>
+        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(全能版)</small></h2>
         
         <div class="toolbar">
             <button class="btn" onclick="document.getElementById('fileElem').click()">📁 選擇或拖曳 Excel</button>
@@ -122,6 +123,7 @@
                 <label>驗算模式</label>
                 <select id="calcMode" onchange="modeChanged()" style="background:#f0f9ff; border-color:#0ea5e9; font-weight:bold;">
                     <option value="horizontal">↔️ 橫向 (A+B=C)</option>
+                    <option value="horizontal_group">↔️ 橫向 (關鍵字分組) [新!]</option>
                     <option value="vertical_row">↕️ 縱向 (指定列 A+B=C)</option>
                     <option value="vertical_indent">📂 縱向 (縮排/空白分層)</option>
                     <option value="vertical_group">📂 縱向 (關鍵字分組)</option>
@@ -130,8 +132,12 @@
 
             <div id="keywordConfig" class="keyword-panel" style="display:none;">
                 <div class="control-group">
-                    <label style="color:#c2410c;">主管關鍵字</label>
-                    <input type="text" id="parentKeywords" value="主管, 小計" placeholder="分組依據">
+                    <label class="kw-label" id="lblKey1">關鍵字 1</label>
+                    <input type="text" id="kwInput1" value="主管, 小計">
+                </div>
+                <div class="control-group">
+                    <label class="kw-label" id="lblKey2">關鍵字 2</label>
+                    <input type="text" id="kwInput2" value="合計, 總計">
                 </div>
             </div>
 
@@ -160,27 +166,13 @@
         const fileElem = document.getElementById('fileElem');
         const overlay = document.getElementById('drop-overlay');
 
-        // 監聽按鈕上傳
         fileElem.addEventListener('change', (e) => {
             if(e.target.files[0]) processFile(e.target.files[0]);
         });
-
-        // 監聽全域拖曳
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            overlay.style.display = 'flex';
-        });
-
-        // 離開遮罩時隱藏 (只在離開遮罩本體時觸發)
-        overlay.addEventListener('dragleave', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            overlay.style.display = 'none';
-        });
-
-        // 放開滑鼠 (Drop)
+        document.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); overlay.style.display = 'flex'; });
+        overlay.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); overlay.style.display = 'none'; });
         overlay.addEventListener('drop', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            overlay.style.display = 'none';
+            e.preventDefault(); e.stopPropagation(); overlay.style.display = 'none';
             if(e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
         });
 
@@ -200,11 +192,8 @@
                     });
                     document.getElementById('sheetControl').style.display = 'flex';
                     loadSheet(workbook.SheetNames[0]);
-                } catch(err) {
-                    alert("讀取檔案失敗：" + err.message);
-                } finally {
-                    document.getElementById('loading').style.display = 'none';
-                }
+                } catch(err) { alert("讀取失敗：" + err.message); } 
+                finally { document.getElementById('loading').style.display = 'none'; }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -224,8 +213,7 @@
             const mode = document.getElementById('calcMode').value;
 
             if (!sheetData || sheetData.length <= hRowIdx) {
-                gridDiv.innerHTML = '<div style="padding:20px; color:#64748b;">請拖曳或上傳 Excel 檔案以開始。</div>';
-                return;
+                gridDiv.innerHTML = '<div style="padding:20px; color:#64748b;">請載入檔案。</div>'; return;
             }
 
             headers = sheetData[hRowIdx];
@@ -236,7 +224,8 @@
                 let className = '';
                 let onClick = '';
                 
-                if (mode !== 'vertical_row') {
+                // 標題點擊判斷
+                if (['horizontal', 'vertical_group', 'vertical_indent'].includes(mode)) {
                     className = 'clickable-header';
                     onClick = `onclick="toggleSelection(${cIdx})"`;
                     const pos = selectedIndices.indexOf(cIdx);
@@ -283,15 +272,18 @@
                         html += `<td class="err-cell">${display}<span class="err-msg">${lastErrors.get(errKey)}</span></td>`;
                     } else {
                         let style = '';
-                        if (mode !== 'vertical_row' && selectedIndices.includes(c)) style = 'background:#f0f9ff;';
-                        if (mode === 'vertical_row' && selectedIndices.includes(r)) style = 'background:#f0f9ff;';
-                        
                         // 縮排視覺
                         if (mode === 'vertical_indent' && selectedIndices.includes(c) && typeof val === 'string') {
                             const spaces = countLeadingSpaces(val);
                             if(spaces > 0) style += `padding-left: ${spaces * 6 + 8}px; color:#475569;`;
                         }
                         
+                        // 標示選取區
+                        const isColSel = selectedIndices.includes(c);
+                        const isRowSel = selectedIndices.includes(r);
+                        if(mode === 'vertical_row' && isRowSel) style += 'background:#f0f9ff;';
+                        if(['horizontal', 'vertical_group', 'vertical_indent'].includes(mode) && isColSel) style += 'background:#f0f9ff;';
+
                         html += `<td style="${style}">${display}</td>`;
                     }
                 }
@@ -306,12 +298,35 @@
             selectedIndices = [];
             lastErrors.clear();
             const mode = document.getElementById('calcMode').value;
-            document.getElementById('keywordConfig').style.display = (mode === 'vertical_group') ? 'flex' : 'none';
+            const kwPanel = document.getElementById('keywordConfig');
+            const l1 = document.getElementById('lblKey1');
+            const l2 = document.getElementById('lblKey2');
+            const i1 = document.getElementById('kwInput1');
+            const i2 = document.getElementById('kwInput2');
+
+            // 動態調整關鍵字面板
+            if (mode === 'vertical_group') {
+                kwPanel.style.display = 'flex';
+                l1.textContent = "主管關鍵字 (小計)";
+                l2.textContent = "總計關鍵字 (排除)";
+                i1.value = "主管, 小計";
+                i2.value = "合計, 總計";
+            } else if (mode === 'horizontal_group') {
+                kwPanel.style.display = 'flex';
+                l1.textContent = "結算關鍵字 (欄位)";
+                l2.textContent = "排除關鍵字 (欄位)";
+                i1.value = "小計, Total, 合計";
+                i2.value = "編號, 備註, 日期";
+            } else {
+                kwPanel.style.display = 'none';
+            }
             renderGrid();
         }
 
         function toggleSelection(idx) {
             const mode = document.getElementById('calcMode').value;
+            if (mode === 'horizontal_group') return; // 此模式全自動，無需點選
+
             if (mode === 'vertical_indent' || mode === 'vertical_group') {
                 selectedIndices = [idx];
             } else {
@@ -326,6 +341,12 @@
             const mode = document.getElementById('calcMode').value;
             const txt = document.getElementById('logicText');
             document.getElementById('logicDisplay').style.display = 'flex';
+
+            if (mode === 'horizontal_group') {
+                const kws = document.getElementById('kwInput1').value;
+                txt.innerHTML = `由左向右累加，遇到標題含「<span style="color:#c2410c">${kws}</span>」的欄位時進行結算與比對。`;
+                return;
+            }
 
             if (selectedIndices.length === 0) {
                 txt.textContent = (mode === 'vertical_row') ? '請點選左側列號...' : '請點選標題欄位...';
@@ -351,7 +372,39 @@
             const mode = document.getElementById('calcMode').value;
             const hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
 
-            if (mode === 'vertical_indent') {
+            // 1. 橫向關鍵字分組 (NEW)
+            if (mode === 'horizontal_group') {
+                const triggerKws = document.getElementById('kwInput1').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
+                const excludeKws = document.getElementById('kwInput2').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
+
+                for (let r = hRowIdx + 1; r < sheetData.length; r++) {
+                    const row = sheetData[r];
+                    if (!row) continue;
+                    
+                    let tempSum = 0;
+                    // 從左到右掃描欄位
+                    for (let c = 0; c < headers.length; c++) {
+                        const hName = String(headers[c] || "");
+                        const isTrigger = triggerKws.some(k => hName.includes(k));
+                        const isExclude = excludeKws.some(k => hName.includes(k));
+                        
+                        const val = parseFloat(row[c]);
+                        const isNum = typeof row[c] === 'number';
+
+                        if (isTrigger) {
+                            // 結算點：檢查目前累積值是否等於這格的值
+                            if (isNum) checkVal(r, c, tempSum, val);
+                            tempSum = 0; // 重置
+                        } else if (!isExclude) {
+                            // 加總點：非排除且非結算欄位
+                            if (isNum) tempSum += val;
+                        }
+                    }
+                }
+            }
+            
+            // 2. 縱向縮排
+            else if (mode === 'vertical_indent') {
                 if (selectedIndices.length !== 1) { alert("請選名稱欄"); return; }
                 const nameIdx = selectedIndices[0];
                 const valCols = headers.map((_, i) => i).filter(i => i !== nameIdx);
@@ -379,10 +432,12 @@
                         }
                     }
                 });
-            } else if (mode === 'vertical_group') {
+            } 
+            // 3. 縱向關鍵字
+            else if (mode === 'vertical_group') {
                 if (selectedIndices.length !== 1) { alert("請選名稱欄"); return; }
                 const nameIdx = selectedIndices[0];
-                const pKws = document.getElementById('parentKeywords').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
+                const pKws = document.getElementById('kwInput1').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
                 headers.forEach((h, cIdx) => {
                     if (cIdx === nameIdx) return;
                     let tempSum = 0;
@@ -400,7 +455,9 @@
                         }
                     }
                 });
-            } else if (mode === 'horizontal') {
+            } 
+            // 4. 橫向指定 A+B=C
+            else if (mode === 'horizontal') {
                 if (selectedIndices.length < 2) return;
                 const target = selectedIndices[selectedIndices.length-1];
                 const inputs = selectedIndices.slice(0,-1);
@@ -411,7 +468,9 @@
                     inputs.forEach(i => sum += (parseFloat(row[i])||0));
                     checkVal(r, target, sum, row[target]);
                 }
-            } else if (mode === 'vertical_row') {
+            } 
+            // 5. 縱向指定列
+            else if (mode === 'vertical_row') {
                 if (selectedIndices.length < 2) return;
                 const targetRow = selectedIndices[selectedIndices.length-1];
                 const inputRows = selectedIndices.slice(0,-1);
