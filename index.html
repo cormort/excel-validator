@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel 驗算大師 (政府預算專用版)</title>
+    <title>Excel 驗算大師 (政府預算全能旗艦版)</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -15,7 +15,7 @@
             --badge-target: #059669;
         }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', Arial, sans-serif;
             margin: 0; padding: 20px; background: var(--bg); color: #334155;
             height: 100vh; display: flex; flex-direction: column;
         }
@@ -74,7 +74,8 @@
             padding: 2px 6px; border-radius: 4px; font-weight: bold; color: white; margin: 0 4px; 
             font-size: 0.8rem; display: inline-block; vertical-align: middle; user-select: none;
         }
-        .logic-tag.interactive { cursor: pointer; }
+        .logic-tag.interactive { cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .logic-tag.interactive:hover { opacity: 0.9; transform: scale(1.1); }
 
         /* 拖曳遮罩與 Loading */
         #drop-overlay {
@@ -94,7 +95,7 @@
     <div id="loading">處理中...</div>
 
     <div class="header-panel">
-        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(政府預算專用版)</small></h2>
+        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(政府預算全能旗艦版)</small></h2>
         
         <div class="toolbar">
             <button class="btn" onclick="document.getElementById('fileElem').click()">📁 載入 Excel</button>
@@ -157,8 +158,8 @@
             <div class="control-group" id="sumDirectionGroup" style="border-left: 2px solid #fed7aa; padding-left: 10px;">
                 <label style="color:#c2410c;">加總位置 (重要!)</label>
                 <select id="sumDirection" style="border-color:#f97316; font-weight:bold;">
-                    <option value="top" selected>⬆️ 加總在上方 (分組抬頭)</option>
-                    <option value="bottom">⬇️ 加總在下方 (分組結尾)</option>
+                    <option value="top" selected>⬆️ 加總在上方 (歸戶式)</option>
+                    <option value="bottom">⬇️ 加總在下方 (會計式)</option>
                 </select>
             </div>
         </div>
@@ -223,8 +224,8 @@
             const ws = workbook.Sheets[name];
             sheetData = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
             
-            // 自動偵測邊界
-            document.getElementById('headerRow').value = 4; // 根據您的截圖，標題好像在第4列左右，設為預設
+            // 自動偵測邊界 (預設標題列為 4)
+            document.getElementById('headerRow').value = 4;
             document.getElementById('endRow').value = sheetData.length;
             document.getElementById('startCol').value = 1;
             const maxCol = sheetData.reduce((acc, row) => Math.max(acc, row.length), 0);
@@ -339,8 +340,6 @@
             if (mode === 'vertical_group' || mode === 'horizontal_group') {
                 kwBtn.style.display = 'inline-block';
                 document.getElementById('keywordConfig').style.display = 'flex';
-                
-                // 顯示/隱藏 加總方向選項
                 document.getElementById('sumDirectionGroup').style.display = (mode === 'vertical_group') ? 'flex' : 'none';
 
                 const l1 = document.getElementById('lblKey1');
@@ -416,22 +415,20 @@
             let endColVal = parseInt(document.getElementById('endCol').value);
             const maxCol = (isNaN(endColVal) || endColVal === 0) ? sheetData[hRowIdx].length : endColVal;
 
-            // 1. 縱向關鍵字分組 (主要修正處)
+            // 1. 縱向關鍵字分組
             if (mode === 'vertical_group') {
                 if (selectedIndices.length !== 1) { alert("請先選取「名稱欄」"); return; }
                 const nameIdx = selectedIndices[0];
                 const triggerKws = document.getElementById('kwInput1').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
                 const excludeKws = document.getElementById('kwInput2').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
-                const sumDirection = document.getElementById('sumDirection').value; // top or bottom
+                const sumDirection = document.getElementById('sumDirection').value; 
 
                 for (let c = startColIdx; c < maxCol; c++) {
                     if (c === nameIdx) continue;
                     
-                    // 針對每一欄初始化
                     let tempSum = 0;
-                    let pendingCheck = null; // 用於「上方加總」模式：儲存待驗算的目標 {row: 5, target: 100}
+                    let pendingCheck = null; 
 
-                    // 遍歷每一列
                     for (let r = hRowIdx + 1; r < maxRow; r++) {
                         const row = sheetData[r];
                         if (!row) continue;
@@ -442,38 +439,28 @@
                         const isTrigger = triggerKws.some(k => name.includes(k));
                         const isExclude = excludeKws.some(k => name.includes(k));
 
-                        if (isExclude) continue; // 忽略總計行
+                        if (isExclude) continue; 
 
                         if (isTrigger) {
                             if (sumDirection === 'bottom') {
-                                // --- 下方加總模式 (原邏輯) ---
-                                // 遇到關鍵字 = 結算點
                                 if (isNum) checkVal(r, c, tempSum, val);
-                                tempSum = 0; // 歸零，準備下一組
+                                tempSum = 0; 
                             } else {
-                                // --- 上方加總模式 (修正邏輯) ---
-                                // 遇到關鍵字 = 新的分組開始。先結算「上一組」，再設定「這一組」的目標
                                 if (pendingCheck !== null) {
-                                    // 結算上一組
                                     checkVal(pendingCheck.row, c, tempSum, pendingCheck.target);
                                 }
-                                // 設定新的目標
                                 tempSum = 0;
                                 pendingCheck = isNum ? { row: r, target: val } : null;
                             }
                         } else {
-                            // 普通項目：累加
                             if (isNum) tempSum += val;
                         }
                     }
-                    
-                    // 迴圈結束後，如果是上方加總模式，還有一組沒結算
                     if (sumDirection === 'top' && pendingCheck !== null) {
                         checkVal(pendingCheck.row, c, tempSum, pendingCheck.target);
                     }
                 }
             }
-            
             // 2. 橫向關鍵字分組
             else if (mode === 'horizontal_group') {
                 const triggerKws = document.getElementById('kwInput1').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
@@ -493,7 +480,6 @@
                     }
                 }
             }
-
             // 3. 縱向縮排
             else if (mode === 'vertical_indent') {
                 if (selectedIndices.length !== 1) { alert("請選名稱欄"); return; }
@@ -518,8 +504,7 @@
                     }
                 }
             }
-
-            // 4. 手動橫向/縱向
+            // 4. 手動模式
             else if (mode === 'horizontal' || mode === 'vertical_row') {
                 if (selectedIndices.length < 2) return;
                 const targetIdx = selectedIndices[selectedIndices.length-1];
@@ -548,15 +533,17 @@
         }
 
         function checkVal(r, c, calculated, current) {
-            if (Math.abs(calculated - current) > 1.0) { // 容許誤差放寬至 1 元
+            if (Math.abs(calculated - current) > 1.0) { 
                 const key = r * 10000 + c;
                 lastErrors.set(key, `應為 ${calculated.toLocaleString()} (差 ${(current - calculated).toLocaleString()})`);
                 correctionMap.set(key, calculated);
             }
         }
 
+        // === 報告匯出 (完整版) ===
         function exportHTMLReport() {
             if (correctionMap.size === 0 && lastErrors.size === 0) { alert("無錯誤可匯出"); return; }
+            
             const correctedData = JSON.parse(JSON.stringify(sheetData));
             correctionMap.forEach((v,k)=>{ const r=Math.floor(k/10000), c=k%10000; if(correctedData[r]) correctedData[r][c]=v; });
             
@@ -564,29 +551,98 @@
             const endColVal = parseInt(document.getElementById('endCol').value);
             const maxCol = (isNaN(endColVal) || endColVal === 0) ? headers.length : endColVal;
             
-            let htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>稽核報告</title><style>body{font-family:'Segoe UI';padding:20px} table{width:100%;border-collapse:collapse;font-size:12px} th,td{border:1px solid #ccc;padding:5px} .err{background:#fecaca} .fixed{background:#dcfce7}</style></head><body><h2>稽核報告</h2>${generateTableHTML(sheetData, 'original', startColIdx, maxCol)}</body></html>`;
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([htmlContent], {type:'text/html'})); a.download = `report.html`; a.click();
+            let htmlContent = `
+            <!DOCTYPE html><html><head><meta charset="UTF-8"><title>財務驗算稽核報告</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial; padding: 40px; background: #f8fafc; color: #333; }
+                h2 { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-top: 40px; color: #1e293b; }
+                .section { background: white; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-radius: 8px; margin-bottom: 30px; overflow-x: auto; }
+                table { width: 100%; border-collapse: collapse; font-size: 13px; }
+                th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; white-space: pre; }
+                th { background: #f1f5f9; font-weight: 600; color: #475569; }
+                .err { background-color: #fecaca; color: #991b1b; font-weight: bold; border: 2px solid #ef4444; }
+                .fixed { background-color: #dcfce7; color: #166534; font-weight: bold; }
+                .diff { color: #dc2626; font-weight: bold; }
+                .info { margin-bottom: 20px; padding: 15px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; color: #1e40af; }
+            </style>
+            </head><body>
+                <h1>📑 財務驗算稽核報告</h1>
+                <div class="info">
+                    <strong>發現錯誤數：</strong> ${lastErrors.size} 筆 <br>
+                    <strong>產生時間：</strong> ${new Date().toLocaleString()}
+                </div>
+                <h2>1. 🔴 原始資料 (錯誤標示)</h2>
+                <div class="section">${generateTableHTML(sheetData, 'original', startColIdx, maxCol)}</div>
+                <h2>2. 🟢 建議修正 (正確數值)</h2>
+                <div class="section">${generateTableHTML(correctedData, 'corrected', startColIdx, maxCol)}</div>
+                <h2>3. 🔵 差異分析 (原始 - 正確)</h2>
+                <div class="section">${generateDiffTableHTML(sheetData, correctedData, startColIdx, maxCol)}</div>
+            </body></html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `稽核報告_${new Date().toISOString().slice(0,10)}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         function generateTableHTML(data, type, sCol, eCol) {
             let hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
             let endRowVal = parseInt(document.getElementById('endRow').value);
             const maxRow = (isNaN(endRowVal) || endRowVal === 0) ? data.length : endRowVal;
+
             let html = '<table><thead><tr><th>列</th>';
             for(let c=sCol; c<eCol; c++) html += `<th>${headers[c]||''}</th>`;
             html += '</tr></thead><tbody>';
+
             for (let r = hRowIdx + 1; r < maxRow; r++) {
-                const row = data[r]; if (!row) continue;
+                const row = data[r];
+                if (!row) continue;
                 html += `<tr><td>${r+1}</td>`;
                 for (let c = sCol; c < eCol; c++) {
                     const key = r * 10000 + c;
+                    const val = row[c];
+                    const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     let cls = '';
                     if (type === 'original' && lastErrors.has(key)) cls = 'err';
-                    html += `<td class="${cls}">${(typeof row[c]==='number')?row[c].toLocaleString():(row[c]||'')}</td>`;
+                    if (type === 'corrected' && correctionMap.has(key)) cls = 'fixed';
+                    html += `<td class="${cls}">${display}</td>`;
                 }
                 html += '</tr>';
             }
-            return html + '</tbody></table>';
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function generateDiffTableHTML(orig, fixed, sCol, eCol) {
+            let hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
+            let endRowVal = parseInt(document.getElementById('endRow').value);
+            const maxRow = (isNaN(endRowVal) || endRowVal === 0) ? orig.length : endRowVal;
+
+            let html = '<table><thead><tr><th>列</th>';
+            for(let c=sCol; c<eCol; c++) html += `<th>${headers[c]||''}</th>`;
+            html += '</tr></thead><tbody>';
+
+            for (let r = hRowIdx + 1; r < maxRow; r++) {
+                html += `<tr><td>${r+1}</td>`;
+                for (let c = sCol; c < eCol; c++) {
+                    const key = r * 10000 + c;
+                    let content = '-';
+                    let cls = 'text-gray';
+                    if (correctionMap.has(key)) {
+                        const diff = (parseFloat(orig[r][c])||0) - (parseFloat(fixed[r][c])||0);
+                        content = diff.toLocaleString(undefined, { minimumFractionDigits: 2 });
+                        cls = 'diff';
+                    }
+                    html += `<td class="${cls}">${content}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            return html;
         }
     </script>
 </body>
