@@ -98,68 +98,68 @@
         <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(政府預算全能旗艦版)</small></h2>
         
         <div class="toolbar">
-            <button class="btn" onclick="document.getElementById('fileElem').click()">📁 載入 Excel</button>
+            <button class="btn" onclick="document.getElementById('fileElem').click()" title="點擊選取電腦中的 Excel 檔案 (.xlsx, .xls)">📁 載入 Excel</button>
             <input type="file" id="fileElem" accept=".xlsx, .xls" style="display:none">
             
             <div class="control-group" id="sheetControl" style="display:none;">
                 <label>工作表</label>
-                <select id="sheetSelector" onchange="switchSheet(this.value)" style="width: 120px;"></select>
+                <select id="sheetSelector" onchange="switchSheet(this.value)" style="width: 120px;" title="切換要進行驗算的工作表 (Sheet)"></select>
             </div>
 
             <div class="control-group">
                 <label>驗算模式</label>
-                <select id="calcMode" onchange="modeChanged()" style="background:#f0f9ff; border-color:#0ea5e9; font-weight:bold;">
-                    <option value="vertical_group">📂 縱向 (關鍵字分組)</option>
-                    <option value="horizontal_group">↔️ 橫向 (關鍵字分組)</option>
-                    <option value="horizontal">↔️ 橫向 (指定 A+/-B=C)</option>
-                    <option value="vertical_row">↕️ 縱向 (指定列 A+/-B=C)</option>
-                    <option value="vertical_indent">📂 縱向 (縮排/空白分層)</option>
+                <select id="calcMode" onchange="modeChanged()" style="background:#f0f9ff; border-color:#0ea5e9; font-weight:bold;" title="選擇適合的驗算邏輯模式">
+                    <option value="vertical_group">📂 縱向 (關鍵字分組) - 適用預算表</option>
+                    <option value="horizontal_group">↔️ 橫向 (關鍵字分組) - 適用一般報表</option>
+                    <option value="horizontal">↔️ 橫向 (指定 A+/-B=C) - 手動設定公式</option>
+                    <option value="vertical_row">↕️ 縱向 (指定列 A+/-B=C) - 手動設定公式</option>
+                    <option value="vertical_indent">📂 縱向 (縮排/空白分層) - 適用階層表</option>
                 </select>
             </div>
 
-            <button class="btn btn-outline" onclick="toggleSettings('rangeSettings')">📐 設定範圍</button>
-            <button class="btn btn-outline" onclick="toggleSettings('keywordConfig')" id="btnKwConfig">🔑 設定邏輯</button>
+            <button class="btn btn-outline" onclick="toggleSettings('rangeSettings')" title="設定資料讀取的範圍 (標題列、結尾列等)，避免讀到無關資訊">📐 設定範圍</button>
+            <button class="btn btn-outline" onclick="toggleSettings('keywordConfig')" id="btnKwConfig" title="設定關鍵字與加總方向 (上方/下方)">🔑 設定邏輯</button>
 
             <div style="flex-grow:1; text-align:right;">
-                <button class="btn" style="background:#059669;" onclick="runCheck()">✓ 執行驗算</button>
-                <button class="btn" style="background:#dc2626;" onclick="exportHTMLReport()">📑 下載報告</button>
-                <button class="btn" style="background:#64748b;" onclick="reset()">↺ 重置</button>
+                <button class="btn" style="background:#059669;" onclick="runCheck()" title="開始執行驗算並檢查錯誤">✓ 執行驗算</button>
+                <button class="btn" style="background:#dc2626;" onclick="exportHTMLReport()" title="將目前的錯誤與建議修正匯出成 HTML 報告">📑 下載報告</button>
+                <button class="btn" style="background:#64748b;" onclick="reset()" title="清除所有選取狀態與驗算結果，重新開始">↺ 重置</button>
             </div>
         </div>
 
         <div id="rangeSettings" class="settings-panel range-panel" style="display:none;">
             <div class="control-group">
                 <label>標題列號</label>
-                <input type="number" id="headerRow" value="1" min="1" style="width: 60px;" onchange="renderGrid()">
+                <input type="number" id="headerRow" value="1" min="1" style="width: 60px;" onchange="renderGrid()" title="表格標題所在的列號 (Row Number)">
             </div>
             <div class="control-group">
                 <label>結束列號 (自動=空)</label>
-                <input type="number" id="endRow" placeholder="自動" min="1" style="width: 80px;" onchange="renderGrid()">
+                <input type="number" id="endRow" placeholder="自動" min="1" style="width: 80px;" onchange="renderGrid()" title="驗算結束的列號，留空則自動讀取到最後一列">
             </div>
             <div class="control-group">
                 <label>起始欄</label>
-                <input type="number" id="startCol" value="1" min="1" style="width: 60px;" onchange="renderGrid()">
+                <input type="number" id="startCol" value="1" min="1" style="width: 60px;" onchange="renderGrid()" title="資料開始的欄位索引 (通常為 1)">
             </div>
             <div class="control-group">
                 <label>結束欄 (自動=空)</label>
-                <input type="number" id="endCol" placeholder="自動" min="1" style="width: 80px;" onchange="renderGrid()">
+                <input type="number" id="endCol" placeholder="自動" min="1" style="width: 80px;" onchange="renderGrid()" title="資料結束的欄位索引，留空則自動讀取到最右側">
             </div>
         </div>
 
         <div id="keywordConfig" class="settings-panel">
             <div class="control-group">
                 <label class="kw-label" id="lblKey1">關鍵字 1 (觸發)</label>
-                <input type="text" id="kwInput1" value="主管, 小計, 核定">
+                <input type="text" id="kwInput1" value="主管, 小計, 核定" title="當列或欄位包含這些文字時，會觸發結算邏輯">
             </div>
             <div class="control-group">
                 <label class="kw-label" id="lblKey2">關鍵字 2 (排除)</label>
-                <input type="text" id="kwInput2" value="合計, 總計">
+                <input type="text" id="kwInput2" value="合計, 總計" title="包含這些文字的列或欄位將被完全忽略，不進行計算">
             </div>
             <div class="control-group" id="sumDirectionGroup" style="border-left: 2px solid #fed7aa; padding-left: 10px;">
                 <label style="color:#c2410c;">加總位置 (重要!)</label>
-                <select id="sumDirection" style="border-color:#f97316; font-weight:bold;">
-                    <option value="top" selected>⬆️ 加總在上方 (歸戶式)</option>
-                    <option value="bottom">⬇️ 加總在下方 (會計式)</option>
+                <select id="sumDirection" style="border-color:#f97316; font-weight:bold;" title="選擇加總邏輯的方向">
+                    <option value="top" selected title="適用政府預算表：小計在上方，明細在下方 (主管 = 1 + 2)">⬆️ 加總在上方 (歸戶式)</option>
+                    <option value="bottom" title="適用一般會計表：明細在上方，小計在下方 (1 + 2 = 小計)">⬇️ 加總在下方 (會計式)</option>
                 </select>
             </div>
         </div>
@@ -252,7 +252,7 @@
             const maxCol = (isNaN(endColVal) || endColVal === 0) ? sheetData[hRowIdx].length : endColVal;
             
             headers = sheetData[hRowIdx] || [];
-            let html = '<table id="dataTable"><thead><tr class="sticky-header"><th class="sticky-col">列</th>';
+            let html = '<table id="dataTable"><thead><tr class="sticky-header"><th class="sticky-col" title="列號">列</th>';
             
             for (let c = 0; c < headers.length; c++) {
                 if (c < startColIdx || c >= maxCol) continue;
@@ -261,6 +261,7 @@
                 let badge = '';
                 let className = '';
                 let onClick = '';
+                let tooltip = `Col ${c+1}: ${h || ''}`;
                 
                 if (['horizontal', 'vertical_group', 'vertical_indent'].includes(mode)) {
                     className = 'clickable-header';
@@ -270,15 +271,24 @@
                         className += ' col-selected';
                         if (mode === 'horizontal') {
                             const isTarget = (pos === selectedIndices.length - 1 && selectedIndices.length > 1);
-                            badge = isTarget ? 
-                                `<span class="logic-tag" style="background:var(--badge-target)">=</span>` :
-                                `<span class="logic-tag interactive" style="background:${(selectedSigns.get(c)||1)===1?'var(--badge-input)':'var(--badge-minus)'}" onclick="toggleSign(event, ${c})">${(selectedSigns.get(c)||1)===1?'+':'-'}</span>`;
+                            if (isTarget) {
+                                badge = `<span class="logic-tag" style="background:var(--badge-target)" title="此為驗算結果目標 (C)">=</span>`;
+                                tooltip += " (目標欄位)";
+                            } else {
+                                const sign = selectedSigns.get(c) || 1;
+                                const isPlus = sign === 1;
+                                badge = `<span class="logic-tag interactive" style="background:${isPlus?'var(--badge-input)':'var(--badge-minus)'}" onclick="toggleSign(event, ${c})" title="目前為${isPlus?'加項':'減項'}，點擊切換">${isPlus?'+':'-'}</span>`;
+                                tooltip += ` (運算${isPlus?'加項':'減項'})`;
+                            }
                         } else {
                             badge = `<span class="logic-tag" style="background:#f59e0b">鍵</span>`;
+                            tooltip += " (已選取名稱欄)";
                         }
+                    } else {
+                        tooltip += " (點擊選取此欄)";
                     }
                 }
-                html += `<th class="${className}" ${onClick}>${badge}${h || 'Col '+(c+1)}</th>`;
+                html += `<th class="${className}" ${onClick} title="${tooltip}">${badge}${h || 'Col '+(c+1)}</th>`;
             }
             html += '</tr></thead><tbody>';
 
@@ -287,6 +297,7 @@
                 let rowHeaderClass = 'sticky-col';
                 let rowOnClick = '';
                 let rowBadge = '';
+                let rowTooltip = `Row ${r+1}`;
 
                 if (mode === 'vertical_row') {
                     rowHeaderClass += ' clickable-row';
@@ -294,13 +305,21 @@
                     const pos = selectedIndices.indexOf(r);
                     if (pos > -1) {
                         rowHeaderClass += ' row-selected';
-                        rowBadge = (pos === selectedIndices.length - 1 && selectedIndices.length > 1) ?
-                            `<span class="logic-tag" style="background:var(--badge-target);">=</span>` :
-                            `<span class="logic-tag interactive" style="background:${(selectedSigns.get(r)||1)===1?'var(--badge-input)':'var(--badge-minus)'}" onclick="toggleSign(event, ${r})">${(selectedSigns.get(r)||1)===1?'+':'-'}</span>`;
+                        if (pos === selectedIndices.length - 1 && selectedIndices.length > 1) {
+                            rowBadge = `<span class="logic-tag" style="background:var(--badge-target);" title="此為驗算結果目標">=</span>`;
+                            rowTooltip += " (目標列)";
+                        } else {
+                            const sign = selectedSigns.get(r) || 1;
+                            const isPlus = sign === 1;
+                            rowBadge = `<span class="logic-tag interactive" style="background:${isPlus?'var(--badge-input)':'var(--badge-minus)'}" onclick="toggleSign(event, ${r})" title="目前為${isPlus?'加項':'減項'}，點擊切換">${isPlus?'+':'-'}</span>`;
+                            rowTooltip += ` (運算${isPlus?'加項':'減項'})`;
+                        }
+                    } else {
+                        rowTooltip += " (點擊選取此列)";
                     }
                 }
 
-                html += `<tr><td class="${rowHeaderClass}" ${rowOnClick}>${r+1} ${rowBadge}</td>`;
+                html += `<tr><td class="${rowHeaderClass}" ${rowOnClick} title="${rowTooltip}">${r+1} ${rowBadge}</td>`;
                 
                 for (let c = 0; c < headers.length; c++) {
                     if (c < startColIdx || c >= maxCol) continue;
@@ -310,7 +329,7 @@
                     const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     
                     if (lastErrors.has(errKey)) {
-                        html += `<td class="err-cell">${display}<span class="err-msg">${lastErrors.get(errKey)}</span></td>`;
+                        html += `<td class="err-cell" title="錯誤：${lastErrors.get(errKey)}">${display}<span class="err-msg">${lastErrors.get(errKey)}</span></td>`;
                     } else {
                         let style = '';
                         if (mode === 'vertical_indent' && selectedIndices.includes(c) && typeof val === 'string') {
