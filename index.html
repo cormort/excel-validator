@@ -67,27 +67,8 @@
         /* 互動元素 */
         .clickable-header:hover, .clickable-row:hover { background-color: #dbeafe; cursor: pointer; }
         .col-selected, .row-selected { background-color: #dbeafe !important; }
-        
-        /* === 錯誤樣式修改 === */
-        /* 嚴重錯誤 (>=1) */
-        .err-cell { 
-            background-color: #fef2f2 !important; 
-            border: 2px solid #ef4444 !important; 
-            color: #991b1b; 
-        }
-        .err-msg { 
-            display: block; font-size: 10px; color: #dc2626; margin-top: 2px; 
-        }
-
-        /* 微小誤差 (<1) */
-        .warn-cell { 
-            background-color: #fff7ed !important; 
-            border: 2px solid #f97316 !important; /* 橘色邊框 */
-            color: #c2410c; 
-        }
-        .warn-msg { 
-            display: block; font-size: 10px; color: #ea580c; margin-top: 2px; 
-        }
+        .err-cell { background-color: #fef2f2 !important; border: 2px solid #ef4444 !important; color: #991b1b; }
+        .err-msg { display: block; font-size: 10px; color: #dc2626; margin-top: 2px; }
 
         .logic-tag { 
             padding: 2px 6px; border-radius: 4px; font-weight: bold; color: white; margin: 0 4px; 
@@ -196,6 +177,21 @@
         let selectedSigns = new Map();
         let lastErrors = new Map();
         let correctionMap = new Map();
+
+        // === 數值清理與轉換函數 ===
+        function parseNumber(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            // 如果已經是數字，直接返回
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            // 字串處理：移除逗號、全形逗號、空白、不可見字元
+            const cleanStr = val.toString()
+                .replace(/,/g, '')      // 移除半形逗號
+                .replace(/，/g, '')     // 移除全形逗號
+                .replace(/\s+/g, '')    // 移除所有空白
+                .trim();
+            const num = parseFloat(cleanStr);
+            return isNaN(num) ? 0 : num;
+        }
 
         // UI Helpers
         function toggleSettings(id) {
@@ -348,12 +344,7 @@
                     const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     
                     if (lastErrors.has(errKey)) {
-                        // === 這裡處理錯誤顯示的顏色 ===
-                        const errObj = lastErrors.get(errKey);
-                        const cls = errObj.type === 'minor' ? 'warn-cell' : 'err-cell';
-                        const msgCls = errObj.type === 'minor' ? 'warn-msg' : 'err-msg';
-                        
-                        html += `<td class="${cls}" title="${errObj.msg}">${display}<span class="${msgCls}">${errObj.msg}</span></td>`;
+                        html += `<td class="err-cell" title="錯誤：${lastErrors.get(errKey)}">${display}<span class="err-msg">${lastErrors.get(errKey)}</span></td>`;
                     } else {
                         let style = '';
                         if (mode === 'vertical_indent' && selectedIndices.includes(c) && typeof val === 'string') {
@@ -476,7 +467,7 @@
                         const row = sheetData[r];
                         if (!row) continue;
                         const name = String(row[nameIdx] || "");
-                        const val = parseFloat(row[c]);
+                        const val = parseNumber(row[c]);
                         const isNum = !isNaN(val);
 
                         const isTrigger = triggerKws.some(k => name.includes(k));
@@ -509,11 +500,12 @@
                 const triggerKws = document.getElementById('kwInput1').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
                 const excludeKws = document.getElementById('kwInput2').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
                 for (let r = hRowIdx + 1; r < maxRow; r++) {
-                    const row = sheetData[r]; if (!row) continue;                    
+                    const row = sheetData[r]; if (!row) continue;
+                    
                     let tempSum = 0;
                     for (let c = startColIdx; c < maxCol; c++) {
                         const hName = String(headers[c] || "");
-                        const val = parseFloat(row[c]); const isNum = !isNaN(val);
+                        const val = parseNumber(row[c]); const isNum = !isNaN(val);
                         if (triggerKws.some(k => hName.includes(k))) {
                             if (isNum) checkVal(r, c, tempSum, val);
                             tempSum = 0; 
@@ -538,11 +530,11 @@
                             for (let k = r + 1; k < maxRow; k++) {
                                 if (rowLevels[k] <= rowLevels[r]) break; 
                                 if (rowLevels[k] === targetLevel) {
-                                    const val = parseFloat(sheetData[k] ? sheetData[k][c] : 0);
+                                    const val = parseNumber(sheetData[k] ? sheetData[k][c] : 0);
                                     if (!isNaN(val)) { childrenSum += val; hasChild = true; }
                                 }
                             }
-                            if (hasChild) checkVal(r, c, childrenSum, parseFloat(sheetData[r][c]||0));
+                            if (hasChild) checkVal(r, c, childrenSum, parseNumber(sheetData[r][c]));
                         }
                     }
                 }
@@ -557,14 +549,14 @@
                     for(let r = hRowIdx + 1; r < maxRow; r++) {
                         const row = sheetData[r]; if(!row || typeof row[targetIdx]!=='number') continue;
                         let sum = 0;
-                        inputs.forEach(i => sum += (parseFloat(row[i])||0) * (selectedSigns.get(i)||1));
+                        inputs.forEach(i => sum += parseNumber(row[i]) * (selectedSigns.get(i)||1));
                         checkVal(r, targetIdx, sum, row[targetIdx]);
                     }
                 } else {
                     for(let c = startColIdx; c < maxCol; c++) {
                         if(typeof sheetData[targetIdx][c]!=='number') continue;
                         let sum = 0;
-                        inputs.forEach(r => sum += (parseFloat(sheetData[r][c])||0) * (selectedSigns.get(r)||1));
+                        inputs.forEach(r => sum += parseNumber(sheetData[r][c]) * (selectedSigns.get(r)||1));
                         checkVal(targetIdx, c, sum, sheetData[targetIdx][c]);
                     }
                 }
@@ -576,19 +568,9 @@
         }
 
         function checkVal(r, c, calculated, current) {
-            const diff = current - calculated;
-            const absDiff = Math.abs(diff);
-
-            // 幾乎嚴格比對 (容許極小浮點數誤差 0.001)
-            if (absDiff > 0.001) {
+            if (Math.abs(calculated - current) > 1.0) { 
                 const key = r * 10000 + c;
-                const type = absDiff < 1.0 ? 'minor' : 'major';
-                
-                // 儲存錯誤物件而非純文字
-                lastErrors.set(key, {
-                    msg: `應為 ${calculated.toLocaleString()} (差 ${diff.toFixed(2)})`,
-                    type: type
-                });
+                lastErrors.set(key, `應為 ${calculated.toLocaleString()} (差 ${(current - calculated).toLocaleString()})`);
                 correctionMap.set(key, calculated);
             }
         }
@@ -614,7 +596,6 @@
                 th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; white-space: pre; }
                 th { background: #f1f5f9; font-weight: 600; color: #475569; }
                 .err { background-color: #fecaca; color: #991b1b; font-weight: bold; border: 2px solid #ef4444; }
-                .warn { background-color: #fff7ed; color: #c2410c; font-weight: bold; border: 2px solid #f97316; }
                 .fixed { background-color: #dcfce7; color: #166534; font-weight: bold; }
                 .diff { color: #dc2626; font-weight: bold; }
                 .info { margin-bottom: 20px; padding: 15px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; color: #1e40af; }
@@ -661,10 +642,7 @@
                     const val = row[c];
                     const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     let cls = '';
-                    if (type === 'original' && lastErrors.has(key)) {
-                        const errObj = lastErrors.get(key);
-                        cls = errObj.type === 'minor' ? 'warn' : 'err';
-                    }
+                    if (type === 'original' && lastErrors.has(key)) cls = 'err';
                     if (type === 'corrected' && correctionMap.has(key)) cls = 'fixed';
                     html += `<td class="${cls}">${display}</td>`;
                 }
@@ -690,7 +668,7 @@
                     let content = '-';
                     let cls = 'text-gray';
                     if (correctionMap.has(key)) {
-                        const diff = (parseFloat(orig[r][c])||0) - (parseFloat(fixed[r][c])||0);
+                        const diff = parseNumber(orig[r][c]) - parseNumber(fixed[r][c]);
                         content = diff.toLocaleString(undefined, { minimumFractionDigits: 2 });
                         cls = 'diff';
                     }
