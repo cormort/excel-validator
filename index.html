@@ -178,19 +178,43 @@
         let lastErrors = new Map();
         let correctionMap = new Map();
 
-        // === 數值清理與轉換函數 ===
+        // === 數值清理與轉換函數 (正規表示式加強版) ===
         function parseNumber(val) {
-            if (val === null || val === undefined || val === '') return 0;
-            // 如果已經是數字，直接返回
-            if (typeof val === 'number') return isNaN(val) ? 0 : val;
-            // 字串處理：移除逗號、全形逗號、空白、不可見字元
-            const cleanStr = val.toString()
-                .replace(/,/g, '')      // 移除半形逗號
-                .replace(/，/g, '')     // 移除全形逗號
-                .replace(/\s+/g, '')    // 移除所有空白
-                .trim();
-            const num = parseFloat(cleanStr);
-            return isNaN(num) ? 0 : num;
+            if (val === null || val === undefined || val === '') return NaN;
+            
+            // 0. 若已是數字，直接回傳 (需過濾 NaN)
+            if (typeof val === 'number') return isNaN(val) ? NaN : val;
+
+            const str = val.toString().trim();
+            if (str === '') return NaN;
+
+            // 1. 嚴格檢查：如果包含中文或英文字母 (a-z, A-Z)，視為文字欄位，直接忽略
+            // 這樣可以排除 "備註", "Total", "說明" 等非數值欄位
+            if (/[a-zA-Z\u4e00-\u9fa5]/.test(str)) {
+                return NaN;
+            }
+
+            // 2. 白名單檢查：是否僅由 [數字, 負號, 小數點, 逗號, 括號, 錢字號, 百分比, 空白] 組成
+            // 這會排除日期 (2024/01/01) 或其他特殊符號
+            const validPattern = /^[-\d\.,，\(\)\$%\uFF05\s]+$/;
+
+            if (validPattern.test(str)) {
+                // 清理雜訊：移除逗號、錢字號、空白
+                let cleanStr = str
+                    .replace(/[,，\$\s]/g, '') // 移除格式符號
+                    .replace(/[%％]/g, '');   // 移除百分比 (目前僅視為純數字處理)
+
+                // 處理會計負數格式：(123) -> -123
+                if (cleanStr.startsWith('(') && cleanStr.endsWith(')')) {
+                    cleanStr = '-' + cleanStr.replace(/[\(\)]/g, '');
+                }
+
+                const num = parseFloat(cleanStr);
+                return isNaN(num) ? NaN : num;
+            }
+
+            // 不符合白名單規則 (例如包含 /, *, @ 等)，回傳 NaN
+            return NaN;
         }
 
         // UI Helpers
@@ -534,7 +558,10 @@
                                     if (!isNaN(val)) { childrenSum += val; hasChild = true; }
                                 }
                             }
-                            if (hasChild) checkVal(r, c, childrenSum, parseNumber(sheetData[r][c]));
+                            if (hasChild) {
+                                const targetVal = parseNumber(sheetData[r][c]);
+                                if (!isNaN(targetVal)) checkVal(r, c, childrenSum, targetVal);
+                            }
                         }
                     }
                 }
@@ -547,17 +574,30 @@
                 
                 if (mode === 'horizontal') {
                     for(let r = hRowIdx + 1; r < maxRow; r++) {
-                        const row = sheetData[r]; if(!row || typeof row[targetIdx]!=='number') continue;
+                        const row = sheetData[r];
+                        if(!row) continue;
+                        
+                        const targetVal = parseNumber(row[targetIdx]);
+                        if (isNaN(targetVal)) continue; 
+
                         let sum = 0;
-                        inputs.forEach(i => sum += parseNumber(row[i]) * (selectedSigns.get(i)||1));
-                        checkVal(r, targetIdx, sum, row[targetIdx]);
+                        inputs.forEach(i => {
+                            const v = parseNumber(row[i]);
+                            sum += (isNaN(v) ? 0 : v) * (selectedSigns.get(i)||1);
+                        });
+                        checkVal(r, targetIdx, sum, targetVal);
                     }
                 } else {
                     for(let c = startColIdx; c < maxCol; c++) {
-                        if(typeof sheetData[targetIdx][c]!=='number') continue;
+                        const targetVal = parseNumber(sheetData[targetIdx][c]);
+                        if (isNaN(targetVal)) continue;
+
                         let sum = 0;
-                        inputs.forEach(r => sum += parseNumber(sheetData[r][c]) * (selectedSigns.get(r)||1));
-                        checkVal(targetIdx, c, sum, sheetData[targetIdx][c]);
+                        inputs.forEach(r => {
+                            const v = parseNumber(sheetData[r][c]);
+                            sum += (isNaN(v) ? 0 : v) * (selectedSigns.get(r)||1);
+                        });
+                        checkVal(targetIdx, c, sum, targetVal);
                     }
                 }
             }
@@ -668,9 +708,13 @@
                     let content = '-';
                     let cls = 'text-gray';
                     if (correctionMap.has(key)) {
-                        const diff = parseNumber(orig[r][c]) - parseNumber(fixed[r][c]);
-                        content = diff.toLocaleString(undefined, { minimumFractionDigits: 2 });
-                        cls = 'diff';
+                        const v1 = parseNumber(orig[r][c]);
+                        const v2 = parseNumber(fixed[r][c]);
+                        if (!isNaN(v1) && !isNaN(v2)) {
+                            const diff = v1 - v2;
+                            content = diff.toLocaleString(undefined, { minimumFractionDigits: 2 });
+                            cls = 'diff';
+                        }
                     }
                     html += `<td class="${cls}">${content}</td>`;
                 }
