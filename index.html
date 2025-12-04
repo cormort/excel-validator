@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel 驗算大師 (全能版)</title>
+    <title>Excel 驗算大師 (全能版 - 含正負號設定)</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #2563eb;
             --bg: #f8fafc;
             --err: #dc2626;
-            --badge-input: #3b82f6;
-            --badge-target: #059669;
+            --badge-input: #3b82f6; /* 加項顏色 */
+            --badge-minus: #ef4444; /* 減項顏色 */
+            --badge-target: #059669; /* 結果目標顏色 */
         }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -74,7 +75,13 @@
             border: 1px solid #bfdbfe; margin-top: 10px; font-size: 0.9rem;
             display: flex; align-items: center; gap: 10px;
         }
-        .logic-tag { padding: 2px 6px; border-radius: 4px; font-weight: bold; color: white; margin: 0 2px; }
+        .logic-tag { 
+            padding: 2px 6px; border-radius: 4px; font-weight: bold; color: white; margin: 0 4px; 
+            font-size: 0.8rem; display: inline-block; vertical-align: middle;
+            user-select: none;
+        }
+        .logic-tag.interactive { cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .logic-tag.interactive:hover { opacity: 0.9; transform: scale(1.1); }
 
         /* 拖曳遮罩 */
         #drop-overlay {
@@ -96,14 +103,13 @@
     </style>
 </head>
 <body>
-
     <div id="drop-overlay">
         <h3>📂 放開滑鼠以載入檔案</h3>
         <p>支援 .xlsx, .xls 格式</p>
     </div>
 
     <div class="header-panel">
-        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(全能版)</small></h2>
+        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(全能版 - 含加減項設定)</small></h2>
         
         <div class="toolbar">
             <button class="btn" onclick="document.getElementById('fileElem').click()">📁 選擇或拖曳 Excel</button>
@@ -122,9 +128,9 @@
             <div class="control-group">
                 <label>驗算模式</label>
                 <select id="calcMode" onchange="modeChanged()" style="background:#f0f9ff; border-color:#0ea5e9; font-weight:bold;">
-                    <option value="horizontal">↔️ 橫向 (A+B=C)</option>
-                    <option value="horizontal_group">↔️ 橫向 (關鍵字分組) [新!]</option>
-                    <option value="vertical_row">↕️ 縱向 (指定列 A+B=C)</option>
+                    <option value="horizontal">↔️ 橫向 (指定 A+/-B=C)</option>
+                    <option value="horizontal_group">↔️ 橫向 (關鍵字分組)</option>
+                    <option value="vertical_row">↕️ 縱向 (指定列 A+/-B=C)</option>
                     <option value="vertical_indent">📂 縱向 (縮排/空白分層)</option>
                     <option value="vertical_group">📂 縱向 (關鍵字分組)</option>
                 </select>
@@ -159,6 +165,7 @@
     <script>
         let workbook = null, sheetData = [], headers = [];
         let selectedIndices = []; 
+        let selectedSigns = new Map(); // 儲存選取項目的正負號：Key為索引, Value為 1 或 -1
         let lastErrors = new Map();
         let correctionMap = new Map();
 
@@ -233,7 +240,15 @@
                         className += ' col-selected';
                         if (mode === 'horizontal') {
                             const isTarget = (pos === selectedIndices.length - 1 && selectedIndices.length > 1);
-                            badge = `<span class="logic-tag" style="background:${isTarget?'var(--badge-target)':'var(--badge-input)'}">${isTarget?'=':'+'}</span>`;
+                            if (isTarget) {
+                                badge = `<span class="logic-tag" style="background:var(--badge-target)">=</span>`;
+                            } else {
+                                // 判斷正負號
+                                const sign = selectedSigns.get(cIdx) || 1;
+                                const signSymbol = sign === 1 ? '+' : '-';
+                                const signColor = sign === 1 ? 'var(--badge-input)' : 'var(--badge-minus)';
+                                badge = `<span class="logic-tag interactive" style="background:${signColor}" onclick="toggleSign(event, ${cIdx})" title="點擊切換加/減">${signSymbol}</span>`;
+                            }
                         } else {
                             badge = `<span class="logic-tag" style="background:#f59e0b">鍵</span>`;
                         }
@@ -258,7 +273,15 @@
                     if (pos > -1) {
                         rowHeaderClass += ' row-selected';
                         const isTarget = (pos === selectedIndices.length - 1 && selectedIndices.length > 1);
-                        rowBadge = `<span style="background:${isTarget?'var(--badge-target)':'var(--badge-input)'}; color:white; border-radius:50%; padding:0 4px; font-size:10px;">${isTarget?'=':'+'}</span>`;
+                        if (isTarget) {
+                            rowBadge = `<span class="logic-tag" style="background:var(--badge-target);">=</span>`;
+                        } else {
+                            // 判斷正負號
+                            const sign = selectedSigns.get(r) || 1;
+                            const signSymbol = sign === 1 ? '+' : '-';
+                            const signColor = sign === 1 ? 'var(--badge-input)' : 'var(--badge-minus)';
+                            rowBadge = `<span class="logic-tag interactive" style="background:${signColor}" onclick="toggleSign(event, ${r})" title="點擊切換加/減">${signSymbol}</span>`;
+                        }
                     }
                 }
 
@@ -296,6 +319,7 @@
 
         function modeChanged() {
             selectedIndices = [];
+            selectedSigns.clear();
             lastErrors.clear();
             const mode = document.getElementById('calcMode').value;
             const kwPanel = document.getElementById('keywordConfig');
@@ -331,9 +355,22 @@
                 selectedIndices = [idx];
             } else {
                 const p = selectedIndices.indexOf(idx);
-                if (p > -1) selectedIndices.splice(p, 1);
-                else selectedIndices.push(idx);
+                if (p > -1) {
+                    selectedIndices.splice(p, 1);
+                    selectedSigns.delete(idx); // 移除符號狀態
+                } else {
+                    selectedIndices.push(idx);
+                    selectedSigns.set(idx, 1); // 預設為加項 (+)
+                }
             }
+            renderGrid();
+        }
+
+        // 新增：切換正負號的功能
+        function toggleSign(e, idx) {
+            e.stopPropagation(); // 防止觸發選取切換
+            const currentSign = selectedSigns.get(idx) || 1;
+            selectedSigns.set(idx, currentSign * -1); // 翻轉正負號
             renderGrid();
         }
 
@@ -355,10 +392,33 @@
 
             if (mode === 'vertical_indent') txt.innerHTML = `依據 <strong>${headers[selectedIndices[0]]}</strong> 的空白縮排判斷層級`;
             else if (mode === 'vertical_group') txt.innerHTML = `依據 <strong>${headers[selectedIndices[0]]}</strong> 與關鍵字分組`;
-            else txt.innerHTML = `已選擇 ${selectedIndices.length} 個項目。`;
+            else {
+                // 在手動模式下顯示目前選取的公式樣貌
+                let formula = [];
+                const len = selectedIndices.length;
+                selectedIndices.forEach((idx, i) => {
+                    if (i === len - 1 && len > 1) {
+                        formula.push(` = <span style="color:var(--badge-target); font-weight:bold;">目標</span>`);
+                    } else {
+                        const sign = selectedSigns.get(idx) || 1;
+                        const symbol = sign === 1 ? '+' : '-';
+                        // 第一個項目如果是正號，不顯示+
+                        const prefix = (i === 0 && sign === 1) ? '' : ` ${symbol} `;
+                        formula.push(`${prefix}項目${idx+1}`);
+                    }
+                });
+                txt.innerHTML = `驗算公式： ${formula.join('')}`;
+            }
         }
 
-        function reset() { selectedIndices = []; lastErrors.clear(); correctionMap.clear(); renderGrid(); }
+        function reset() { 
+            selectedIndices = []; 
+            selectedSigns.clear(); 
+            lastErrors.clear(); 
+            correctionMap.clear(); 
+            renderGrid(); 
+        }
+        
         function countLeadingSpaces(str) {
             if (typeof str !== 'string') return 0;
             const match = str.match(/^[\s\u00a0]*/);
@@ -372,15 +432,14 @@
             const mode = document.getElementById('calcMode').value;
             const hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
 
-            // 1. 橫向關鍵字分組 (NEW)
+            // 1. 橫向關鍵字分組
             if (mode === 'horizontal_group') {
                 const triggerKws = document.getElementById('kwInput1').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
                 const excludeKws = document.getElementById('kwInput2').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
 
                 for (let r = hRowIdx + 1; r < sheetData.length; r++) {
                     const row = sheetData[r];
-                    if (!row) continue;
-                    
+                    if (!row) continue;                    
                     let tempSum = 0;
                     // 從左到右掃描欄位
                     for (let c = 0; c < headers.length; c++) {
@@ -392,11 +451,9 @@
                         const isNum = typeof row[c] === 'number';
 
                         if (isTrigger) {
-                            // 結算點：檢查目前累積值是否等於這格的值
                             if (isNum) checkVal(r, c, tempSum, val);
                             tempSum = 0; // 重置
                         } else if (!isExclude) {
-                            // 加總點：非排除且非結算欄位
                             if (isNum) tempSum += val;
                         }
                     }
@@ -456,28 +513,38 @@
                     }
                 });
             } 
-            // 4. 橫向指定 A+B=C
+            // 4. 橫向指定 A+/-B=C (已修正)
             else if (mode === 'horizontal') {
                 if (selectedIndices.length < 2) return;
                 const target = selectedIndices[selectedIndices.length-1];
                 const inputs = selectedIndices.slice(0,-1);
+                
                 for(let r=hRowIdx+1; r<sheetData.length; r++) {
                     const row = sheetData[r];
                     if(!row || typeof row[target]!=='number') continue;
                     let sum = 0;
-                    inputs.forEach(i => sum += (parseFloat(row[i])||0));
+                    inputs.forEach(i => {
+                        const val = parseFloat(row[i]) || 0;
+                        const sign = selectedSigns.get(i) || 1; // 取得該欄位的正負號
+                        sum += val * sign;
+                    });
                     checkVal(r, target, sum, row[target]);
                 }
             } 
-            // 5. 縱向指定列
+            // 5. 縱向指定列 A+/-B=C (已修正)
             else if (mode === 'vertical_row') {
                 if (selectedIndices.length < 2) return;
                 const targetRow = selectedIndices[selectedIndices.length-1];
                 const inputRows = selectedIndices.slice(0,-1);
+                
                 for(let c=0; c<headers.length; c++) {
                     if(typeof sheetData[targetRow][c]!=='number') continue;
                     let sum = 0;
-                    inputRows.forEach(r => sum += (parseFloat(sheetData[r][c])||0));
+                    inputRows.forEach(r => {
+                        const val = parseFloat(sheetData[r][c]) || 0;
+                        const sign = selectedSigns.get(r) || 1; // 取得該列的正負號
+                        sum += val * sign;
+                    });
                     checkVal(targetRow, c, sum, sheetData[targetRow][c]);
                 }
             }
@@ -488,6 +555,7 @@
         }
 
         function checkVal(r, c, calculated, current) {
+            // 處理浮點數誤差
             if (Math.abs(calculated - current) > 0.02) { 
                 const key = r * 10000 + c;
                 const diff = (current - calculated).toFixed(2);
