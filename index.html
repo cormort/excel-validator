@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel 驗算大師 (邊界設定修復版)</title>
+    <title>Excel 驗算大師 (政府預算專用版)</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -37,13 +37,13 @@
         .btn-outline { background: white; border: 1px solid #cbd5e1; color: #475569; }
         .btn-outline:hover { background: #f1f5f9; }
 
-        /* 設定面板 (關鍵字 & 範圍) */
+        /* 設定面板 */
         .settings-panel {
             background: #fff7ed; padding: 10px; border-radius: 6px;
             border: 1px solid #fed7aa; display: flex; gap: 15px; align-items: flex-end; margin-top: 10px;
             flex-wrap: wrap;
         }
-        .range-panel { background: #f0fdf4; border-color: #bbf7d0; } /* 綠色系區分 */
+        .range-panel { background: #f0fdf4; border-color: #bbf7d0; } 
 
         /* 表格區 */
         #grid-container {
@@ -75,9 +75,8 @@
             font-size: 0.8rem; display: inline-block; vertical-align: middle; user-select: none;
         }
         .logic-tag.interactive { cursor: pointer; }
-        .logic-tag.interactive:hover { opacity: 0.9; transform: scale(1.1); }
 
-        /* 拖曳遮罩 */
+        /* 拖曳遮罩與 Loading */
         #drop-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(37, 99, 235, 0.95); z-index: 5000; display: none;
@@ -95,7 +94,7 @@
     <div id="loading">處理中...</div>
 
     <div class="header-panel">
-        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(範圍設定修復版)</small></h2>
+        <h2 style="margin:0 0 10px 0;">📊 Excel 驗算大師 <small style="font-size:0.8rem; color:#64748b;">(政府預算專用版)</small></h2>
         
         <div class="toolbar">
             <button class="btn" onclick="document.getElementById('fileElem').click()">📁 載入 Excel</button>
@@ -109,16 +108,16 @@
             <div class="control-group">
                 <label>驗算模式</label>
                 <select id="calcMode" onchange="modeChanged()" style="background:#f0f9ff; border-color:#0ea5e9; font-weight:bold;">
-                    <option value="horizontal">↔️ 橫向 (指定 A+/-B=C)</option>
+                    <option value="vertical_group">📂 縱向 (關鍵字分組)</option>
                     <option value="horizontal_group">↔️ 橫向 (關鍵字分組)</option>
+                    <option value="horizontal">↔️ 橫向 (指定 A+/-B=C)</option>
                     <option value="vertical_row">↕️ 縱向 (指定列 A+/-B=C)</option>
                     <option value="vertical_indent">📂 縱向 (縮排/空白分層)</option>
-                    <option value="vertical_group">📂 縱向 (關鍵字分組)</option>
                 </select>
             </div>
 
             <button class="btn btn-outline" onclick="toggleSettings('rangeSettings')">📐 設定範圍</button>
-            <button class="btn btn-outline" onclick="toggleSettings('keywordConfig')" id="btnKwConfig" style="display:none;">🔑 設定關鍵字</button>
+            <button class="btn btn-outline" onclick="toggleSettings('keywordConfig')" id="btnKwConfig">🔑 設定邏輯</button>
 
             <div style="flex-grow:1; text-align:right;">
                 <button class="btn" style="background:#059669;" onclick="runCheck()">✓ 執行驗算</button>
@@ -133,28 +132,34 @@
                 <input type="number" id="headerRow" value="1" min="1" style="width: 60px;" onchange="renderGrid()">
             </div>
             <div class="control-group">
-                <label>結束列號 (End Row)</label>
-                <input type="number" id="endRow" placeholder="自動" min="1" style="width: 70px;" onchange="renderGrid()">
+                <label>結束列號 (自動=空)</label>
+                <input type="number" id="endRow" placeholder="自動" min="1" style="width: 80px;" onchange="renderGrid()">
             </div>
             <div class="control-group">
-                <label>起始欄 (Start Col)</label>
+                <label>起始欄</label>
                 <input type="number" id="startCol" value="1" min="1" style="width: 60px;" onchange="renderGrid()">
             </div>
             <div class="control-group">
-                <label>結束欄 (End Col)</label>
-                <input type="number" id="endCol" placeholder="自動" min="1" style="width: 60px;" onchange="renderGrid()">
+                <label>結束欄 (自動=空)</label>
+                <input type="number" id="endCol" placeholder="自動" min="1" style="width: 80px;" onchange="renderGrid()">
             </div>
-            <span style="font-size:0.8rem; color:#15803d; align-self:center;">提示：設定為空或0即為自動偵測</span>
         </div>
 
-        <div id="keywordConfig" class="settings-panel" style="display:none;">
+        <div id="keywordConfig" class="settings-panel">
             <div class="control-group">
-                <label class="kw-label" id="lblKey1">關鍵字 1 (觸發/結算)</label>
-                <input type="text" id="kwInput1" value="主管, 小計">
+                <label class="kw-label" id="lblKey1">關鍵字 1 (觸發)</label>
+                <input type="text" id="kwInput1" value="主管, 小計, 核定">
             </div>
             <div class="control-group">
-                <label class="kw-label" id="lblKey2">關鍵字 2 (排除/忽略)</label>
+                <label class="kw-label" id="lblKey2">關鍵字 2 (排除)</label>
                 <input type="text" id="kwInput2" value="合計, 總計">
+            </div>
+            <div class="control-group" id="sumDirectionGroup" style="border-left: 2px solid #fed7aa; padding-left: 10px;">
+                <label style="color:#c2410c;">加總位置 (重要!)</label>
+                <select id="sumDirection" style="border-color:#f97316; font-weight:bold;">
+                    <option value="top" selected>⬆️ 加總在上方 (分組抬頭)</option>
+                    <option value="bottom">⬇️ 加總在下方 (分組結尾)</option>
+                </select>
             </div>
         </div>
         
@@ -168,11 +173,11 @@
     <script>
         let workbook = null, sheetData = [], headers = [];
         let selectedIndices = []; 
-        let selectedSigns = new Map(); // Key: index, Value: 1 or -1
+        let selectedSigns = new Map();
         let lastErrors = new Map();
         let correctionMap = new Map();
 
-        // UI Toggle Helper
+        // UI Helpers
         function toggleSettings(id) {
             const el = document.getElementById(id);
             el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'flex' : 'none';
@@ -197,8 +202,6 @@
                 try {
                     const data = new Uint8Array(e.target.result);
                     workbook = XLSX.read(data, {type: 'array'});
-                    
-                    // Populate Sheet Selector
                     const sheetSel = document.getElementById('sheetSelector');
                     sheetSel.innerHTML = '';
                     workbook.SheetNames.forEach(name => {
@@ -207,7 +210,6 @@
                         sheetSel.appendChild(opt);
                     });
                     document.getElementById('sheetControl').style.display = 'flex';
-                    
                     loadSheet(workbook.SheetNames[0]);
                 } catch(err) { alert("讀取失敗：" + err.message); } 
                 finally { document.getElementById('loading').style.display = 'none'; }
@@ -222,7 +224,7 @@
             sheetData = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
             
             // 自動偵測邊界
-            document.getElementById('headerRow').value = 1; // 預設第一列
+            document.getElementById('headerRow').value = 4; // 根據您的截圖，標題好像在第4列左右，設為預設
             document.getElementById('endRow').value = sheetData.length;
             document.getElementById('startCol').value = 1;
             const maxCol = sheetData.reduce((acc, row) => Math.max(acc, row.length), 0);
@@ -231,32 +233,28 @@
             renderGrid();
         }
 
-        // === 核心渲染邏輯 (含邊界控制) ===
+        // === 渲染表格 ===
         function renderGrid() {
             const gridDiv = document.getElementById('grid-container');
             const mode = document.getElementById('calcMode').value;
             
-            // 取得邊界設定
             let hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
             let endRowVal = parseInt(document.getElementById('endRow').value);
             let startColIdx = parseInt(document.getElementById('startCol').value) - 1;
             let endColVal = parseInt(document.getElementById('endCol').value);
 
             if (!sheetData || sheetData.length <= hRowIdx) {
-                gridDiv.innerHTML = '<div style="padding:20px; color:#64748b;">請載入檔案。</div>'; return;
+                gridDiv.innerHTML = '<div style="padding:20px; color:#64748b;">請載入檔案或檢查標題列設定。</div>'; return;
             }
 
-            // 邊界防呆
             const maxRow = (isNaN(endRowVal) || endRowVal === 0) ? sheetData.length : endRowVal;
             const maxCol = (isNaN(endColVal) || endColVal === 0) ? sheetData[hRowIdx].length : endColVal;
             
-            // 處理標題
             headers = sheetData[hRowIdx] || [];
             let html = '<table id="dataTable"><thead><tr class="sticky-header"><th class="sticky-col">列</th>';
             
-            // 渲染標題 (只渲染範圍內的欄位)
             for (let c = 0; c < headers.length; c++) {
-                if (c < startColIdx || c >= maxCol) continue; // 範圍外跳過
+                if (c < startColIdx || c >= maxCol) continue;
 
                 let h = headers[c];
                 let badge = '';
@@ -271,14 +269,9 @@
                         className += ' col-selected';
                         if (mode === 'horizontal') {
                             const isTarget = (pos === selectedIndices.length - 1 && selectedIndices.length > 1);
-                            if (isTarget) {
-                                badge = `<span class="logic-tag" style="background:var(--badge-target)">=</span>`;
-                            } else {
-                                const sign = selectedSigns.get(c) || 1;
-                                const symbol = sign === 1 ? '+' : '-';
-                                const color = sign === 1 ? 'var(--badge-input)' : 'var(--badge-minus)';
-                                badge = `<span class="logic-tag interactive" style="background:${color}" onclick="toggleSign(event, ${c})">${symbol}</span>`;
-                            }
+                            badge = isTarget ? 
+                                `<span class="logic-tag" style="background:var(--badge-target)">=</span>` :
+                                `<span class="logic-tag interactive" style="background:${(selectedSigns.get(c)||1)===1?'var(--badge-input)':'var(--badge-minus)'}" onclick="toggleSign(event, ${c})">${(selectedSigns.get(c)||1)===1?'+':'-'}</span>`;
                         } else {
                             badge = `<span class="logic-tag" style="background:#f59e0b">鍵</span>`;
                         }
@@ -288,11 +281,8 @@
             }
             html += '</tr></thead><tbody>';
 
-            // 渲染資料列 (只渲染範圍內的列)
             for (let r = hRowIdx + 1; r < maxRow; r++) {
                 const row = sheetData[r] || [];
-                // 如果是空行且不在縱向模式的關鍵字檢查中，可考慮跳過，但為了保持格式暫時保留
-                
                 let rowHeaderClass = 'sticky-col';
                 let rowOnClick = '';
                 let rowBadge = '';
@@ -303,23 +293,16 @@
                     const pos = selectedIndices.indexOf(r);
                     if (pos > -1) {
                         rowHeaderClass += ' row-selected';
-                        const isTarget = (pos === selectedIndices.length - 1 && selectedIndices.length > 1);
-                        if (isTarget) {
-                            rowBadge = `<span class="logic-tag" style="background:var(--badge-target);">=</span>`;
-                        } else {
-                            const sign = selectedSigns.get(r) || 1;
-                            const symbol = sign === 1 ? '+' : '-';
-                            const color = sign === 1 ? 'var(--badge-input)' : 'var(--badge-minus)';
-                            rowBadge = `<span class="logic-tag interactive" style="background:${color}" onclick="toggleSign(event, ${r})">${symbol}</span>`;
-                        }
+                        rowBadge = (pos === selectedIndices.length - 1 && selectedIndices.length > 1) ?
+                            `<span class="logic-tag" style="background:var(--badge-target);">=</span>` :
+                            `<span class="logic-tag interactive" style="background:${(selectedSigns.get(r)||1)===1?'var(--badge-input)':'var(--badge-minus)'}" onclick="toggleSign(event, ${r})">${(selectedSigns.get(r)||1)===1?'+':'-'}</span>`;
                     }
                 }
 
                 html += `<tr><td class="${rowHeaderClass}" ${rowOnClick}>${r+1} ${rowBadge}</td>`;
                 
-                // 渲染單元格
                 for (let c = 0; c < headers.length; c++) {
-                    if (c < startColIdx || c >= maxCol) continue; // 範圍外跳過
+                    if (c < startColIdx || c >= maxCol) continue;
 
                     const val = row[c];
                     const errKey = r * 10000 + c;
@@ -329,16 +312,12 @@
                         html += `<td class="err-cell">${display}<span class="err-msg">${lastErrors.get(errKey)}</span></td>`;
                     } else {
                         let style = '';
-                        // 縮排視覺
                         if (mode === 'vertical_indent' && selectedIndices.includes(c) && typeof val === 'string') {
                             const spaces = countLeadingSpaces(val);
                             if(spaces > 0) style += `padding-left: ${spaces * 6 + 8}px; color:#475569;`;
                         }
-                        // 標示選取區
-                        const isColSel = selectedIndices.includes(c);
-                        const isRowSel = selectedIndices.includes(r);
-                        if ((mode === 'vertical_row' && isRowSel) || 
-                            (['horizontal', 'vertical_group', 'vertical_indent'].includes(mode) && isColSel)) {
+                        if ((mode === 'vertical_row' && selectedIndices.includes(r)) || 
+                            (['horizontal', 'vertical_group', 'vertical_indent'].includes(mode) && selectedIndices.includes(c))) {
                             style += 'background:#f0f9ff;';
                         }
                         html += `<td style="${style}">${display}</td>`;
@@ -351,34 +330,32 @@
             updateLogicText();
         }
 
-        // === 狀態管理 ===
+        // === UI 互動 ===
         function modeChanged() {
-            selectedIndices = [];
-            selectedSigns.clear();
-            lastErrors.clear();
-            
+            selectedIndices = []; selectedSigns.clear(); lastErrors.clear();
             const mode = document.getElementById('calcMode').value;
             const kwBtn = document.getElementById('btnKwConfig');
             
-            // UI 更新
             if (mode === 'vertical_group' || mode === 'horizontal_group') {
                 kwBtn.style.display = 'inline-block';
-                // 預設展開
                 document.getElementById('keywordConfig').style.display = 'flex';
                 
+                // 顯示/隱藏 加總方向選項
+                document.getElementById('sumDirectionGroup').style.display = (mode === 'vertical_group') ? 'flex' : 'none';
+
                 const l1 = document.getElementById('lblKey1');
                 const l2 = document.getElementById('lblKey2');
                 const i1 = document.getElementById('kwInput1');
                 const i2 = document.getElementById('kwInput2');
 
                 if (mode === 'vertical_group') {
-                    l1.textContent = "結算關鍵字 (遇此則比對並歸零)";
-                    l2.textContent = "排除關鍵字 (完全忽略不計)";
+                    l1.textContent = "分組關鍵字 (主管)";
+                    l2.textContent = "排除關鍵字 (總計)";
                     i1.value = "主管, 小計, 核定";
                     i2.value = "合計, 總計";
                 } else {
-                    l1.textContent = "結算關鍵字 (欄位名稱)";
-                    l2.textContent = "排除關鍵字 (欄位名稱)";
+                    l1.textContent = "結算關鍵字 (欄名)";
+                    l2.textContent = "排除關鍵字 (欄名)";
                     i1.value = "小計, Total, 合計";
                     i2.value = "編號, 備註, 日期";
                 }
@@ -397,13 +374,8 @@
                 selectedIndices = [idx];
             } else {
                 const p = selectedIndices.indexOf(idx);
-                if (p > -1) {
-                    selectedIndices.splice(p, 1);
-                    selectedSigns.delete(idx);
-                } else {
-                    selectedIndices.push(idx);
-                    selectedSigns.set(idx, 1); // Default +
-                }
+                if (p > -1) { selectedIndices.splice(p, 1); selectedSigns.delete(idx); } 
+                else { selectedIndices.push(idx); selectedSigns.set(idx, 1); }
             }
             renderGrid();
         }
@@ -415,109 +387,89 @@
             renderGrid();
         }
 
-        function countLeadingSpaces(str) {
-            if (typeof str !== 'string') return 0;
-            const match = str.match(/^[\s\u00a0]*/);
-            return match ? match[0].length : 0;
-        }
-
         function updateLogicText() {
             const mode = document.getElementById('calcMode').value;
-            const display = document.getElementById('logicDisplay');
             const txt = document.getElementById('logicText');
-            display.style.display = 'block';
+            document.getElementById('logicDisplay').style.display = 'block';
 
-            if (mode === 'horizontal_group') {
-                txt.innerHTML = `自動掃描：橫向加總，遇到「關鍵字1」欄位結算，忽略「關鍵字2」。`;
-            } else if (mode === 'vertical_group') {
-                txt.innerHTML = `自動掃描：縱向累積，遇到「關鍵字1」列結算並歸零，忽略「關鍵字2」。(請先選取名稱欄)`;
-            } else if (selectedIndices.length === 0) {
-                txt.textContent = '請在表格中點選項目以建立驗算公式...';
-            } else {
-                 if (['vertical_indent', 'vertical_group'].includes(mode)) {
-                    txt.innerHTML = `已選擇基礎欄位：<strong>${headers[selectedIndices[0]]}</strong>`;
-                 } else {
-                    let formula = [];
-                    const len = selectedIndices.length;
-                    selectedIndices.forEach((idx, i) => {
-                        if (i === len - 1 && len > 1) {
-                            formula.push(` = <span style="color:var(--badge-target); font-weight:bold;">目標</span>`);
-                        } else {
-                            const sign = selectedSigns.get(idx) || 1;
-                            const symbol = sign === 1 ? '+' : '-';
-                            const prefix = (i === 0 && sign === 1) ? '' : ` ${symbol} `;
-                            const name = mode==='vertical_row' ? `Row ${idx+1}` : (headers[idx] || `Col ${idx+1}`);
-                            formula.push(`${prefix}${name}`);
-                        }
-                    });
-                    txt.innerHTML = `驗算公式： ${formula.join('')}`;
-                 }
+            if (mode === 'horizontal_group') txt.innerHTML = `自動掃描：橫向加總，遇到「關鍵字1」結算。`;
+            else if (mode === 'vertical_group') {
+                const dir = document.getElementById('sumDirection').value;
+                const dirText = dir === 'top' ? '加總在上方 (分組抬頭)' : '加總在下方 (分組結尾)';
+                txt.innerHTML = `自動掃描：縱向模式 [${dirText}]。<br>請先點選包含文字的「名稱欄」，程式將自動分組計算其他數值欄位。`;
             }
+            else if (selectedIndices.length === 0) txt.textContent = '請點選表格欄/列以設定公式...';
+            else txt.innerHTML = `已選取項目數：${selectedIndices.length}`;
         }
         
-        function reset() { 
-            selectedIndices = []; selectedSigns.clear(); lastErrors.clear(); correctionMap.clear(); 
-            renderGrid(); 
-        }
+        function reset() { selectedIndices = []; selectedSigns.clear(); lastErrors.clear(); correctionMap.clear(); renderGrid(); }
+        function countLeadingSpaces(str) { return (str && typeof str==='string') ? (str.match(/^[\s\u00a0]*/)[0].length) : 0; }
 
-        // === 核心驗算邏輯 (修復版) ===
+        // === 核心驗算邏輯 ===
         function runCheck() {
-            lastErrors.clear();
-            correctionMap.clear();
-            
+            lastErrors.clear(); correctionMap.clear();
             const mode = document.getElementById('calcMode').value;
-            
-            // 取得邊界
             const hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
             let endRowVal = parseInt(document.getElementById('endRow').value);
             const maxRow = (isNaN(endRowVal) || endRowVal === 0) ? sheetData.length : endRowVal;
-            
             let startColIdx = parseInt(document.getElementById('startCol').value) - 1;
             let endColVal = parseInt(document.getElementById('endCol').value);
             const maxCol = (isNaN(endColVal) || endColVal === 0) ? sheetData[hRowIdx].length : endColVal;
 
-            // 1. 縱向關鍵字分組 (Fix: 邏輯重寫)
+            // 1. 縱向關鍵字分組 (主要修正處)
             if (mode === 'vertical_group') {
-                if (selectedIndices.length !== 1) { alert("請先選取包含文字描述的「名稱欄」"); return; }
+                if (selectedIndices.length !== 1) { alert("請先選取「名稱欄」"); return; }
                 const nameIdx = selectedIndices[0];
-                
-                // 關鍵字
                 const triggerKws = document.getElementById('kwInput1').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
                 const excludeKws = document.getElementById('kwInput2').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
+                const sumDirection = document.getElementById('sumDirection').value; // top or bottom
 
-                // 針對每一欄進行檢查 (只檢查範圍內的欄)
                 for (let c = startColIdx; c < maxCol; c++) {
-                    if (c === nameIdx) continue; // 跳過名稱欄本身
+                    if (c === nameIdx) continue;
                     
+                    // 針對每一欄初始化
                     let tempSum = 0;
-                    
+                    let pendingCheck = null; // 用於「上方加總」模式：儲存待驗算的目標 {row: 5, target: 100}
+
+                    // 遍歷每一列
                     for (let r = hRowIdx + 1; r < maxRow; r++) {
                         const row = sheetData[r];
                         if (!row) continue;
-                        
                         const name = String(row[nameIdx] || "");
                         const val = parseFloat(row[c]);
-                        const isNum = !isNaN(val); // 嚴格檢查是否為數字
+                        const isNum = !isNaN(val);
 
-                        // 判斷邏輯
                         const isTrigger = triggerKws.some(k => name.includes(k));
                         const isExclude = excludeKws.some(k => name.includes(k));
 
+                        if (isExclude) continue; // 忽略總計行
+
                         if (isTrigger) {
-                            // 這是結算行 (例如：主管核列)
-                            if (isNum) {
-                                // 比對目前累積值 vs 此格數值
-                                checkVal(r, c, tempSum, val);
+                            if (sumDirection === 'bottom') {
+                                // --- 下方加總模式 (原邏輯) ---
+                                // 遇到關鍵字 = 結算點
+                                if (isNum) checkVal(r, c, tempSum, val);
+                                tempSum = 0; // 歸零，準備下一組
+                            } else {
+                                // --- 上方加總模式 (修正邏輯) ---
+                                // 遇到關鍵字 = 新的分組開始。先結算「上一組」，再設定「這一組」的目標
+                                if (pendingCheck !== null) {
+                                    // 結算上一組
+                                    checkVal(pendingCheck.row, c, tempSum, pendingCheck.target);
+                                }
+                                // 設定新的目標
+                                tempSum = 0;
+                                pendingCheck = isNum ? { row: r, target: val } : null;
                             }
-                            // ★重要修正：遇到主管/小計，結算完後「歸零」，下一組重新開始
-                            tempSum = 0;
-                        } else if (isExclude) {
-                            // 這是總計或不需要的大標題 -> 跳過，不加總也不結算
-                            continue;
                         } else {
-                            // 普通項目 -> 累積
+                            // 普通項目：累加
                             if (isNum) tempSum += val;
                         }
+                    }
+                    
+                    // 迴圈結束後，如果是上方加總模式，還有一組沒結算
+                    if (sumDirection === 'top' && pendingCheck !== null) {
+                        checkVal(pendingCheck.row, c, tempSum, pendingCheck.target);
                     }
                 }
             }
@@ -526,47 +478,34 @@
             else if (mode === 'horizontal_group') {
                 const triggerKws = document.getElementById('kwInput1').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
                 const excludeKws = document.getElementById('kwInput2').value.split(/[,，]/).map(k=>k.trim()).filter(k=>k);
-
                 for (let r = hRowIdx + 1; r < maxRow; r++) {
-                    const row = sheetData[r];
-                    if (!row) continue;                    
+                    const row = sheetData[r]; if (!row) continue;                    
                     let tempSum = 0;
-                    
                     for (let c = startColIdx; c < maxCol; c++) {
                         const hName = String(headers[c] || "");
-                        const isTrigger = triggerKws.some(k => hName.includes(k));
-                        const isExclude = excludeKws.some(k => hName.includes(k));
-                        
-                        const val = parseFloat(row[c]);
-                        const isNum = !isNaN(val);
-
-                        if (isTrigger) {
+                        const val = parseFloat(row[c]); const isNum = !isNaN(val);
+                        if (triggerKws.some(k => hName.includes(k))) {
                             if (isNum) checkVal(r, c, tempSum, val);
                             tempSum = 0; 
-                        } else if (!isExclude) {
+                        } else if (!excludeKws.some(k => hName.includes(k))) {
                             if (isNum) tempSum += val;
                         }
                     }
                 }
             }
 
-            // 3. 縱向縮排 (保持原樣，加上邊界控制)
+            // 3. 縱向縮排
             else if (mode === 'vertical_indent') {
                 if (selectedIndices.length !== 1) { alert("請選名稱欄"); return; }
                 const nameIdx = selectedIndices[0];
                 const rowLevels = [];
-                for (let r = hRowIdx + 1; r < maxRow; r++) {
-                    rowLevels[r] = countLeadingSpaces(sheetData[r] ? String(sheetData[r][nameIdx] || "") : "");
-                }
-
+                for (let r = hRowIdx + 1; r < maxRow; r++) rowLevels[r] = countLeadingSpaces(sheetData[r] ? String(sheetData[r][nameIdx] || "") : "");
                 for (let c = startColIdx; c < maxCol; c++) {
                     if (c === nameIdx) continue;
                     for (let r = hRowIdx + 1; r < maxRow - 1; r++) {
-                        // 找尋子項目加總
                         if (rowLevels[r+1] > rowLevels[r]) {
                             const targetLevel = rowLevels[r+1];
-                            let childrenSum = 0;
-                            let hasChild = false;
+                            let childrenSum = 0, hasChild = false;
                             for (let k = r + 1; k < maxRow; k++) {
                                 if (rowLevels[k] <= rowLevels[r]) break; 
                                 if (rowLevels[k] === targetLevel) {
@@ -574,49 +513,32 @@
                                     if (!isNaN(val)) { childrenSum += val; hasChild = true; }
                                 }
                             }
-                            if (hasChild) {
-                                const currentVal = parseFloat(sheetData[r] ? sheetData[r][c] : 0) || 0;
-                                checkVal(r, c, childrenSum, currentVal);
-                            }
+                            if (hasChild) checkVal(r, c, childrenSum, parseFloat(sheetData[r][c]||0));
                         }
                     }
                 }
             }
 
-            // 4. 手動橫向 (A +/- B = C)
-            else if (mode === 'horizontal') {
+            // 4. 手動橫向/縱向
+            else if (mode === 'horizontal' || mode === 'vertical_row') {
                 if (selectedIndices.length < 2) return;
-                const target = selectedIndices[selectedIndices.length-1];
+                const targetIdx = selectedIndices[selectedIndices.length-1];
                 const inputs = selectedIndices.slice(0,-1);
                 
-                for(let r = hRowIdx + 1; r < maxRow; r++) {
-                    const row = sheetData[r];
-                    if(!row || typeof row[target]!=='number') continue; // 目標格必須有數字才驗算
-                    let sum = 0;
-                    inputs.forEach(i => {
-                        const val = parseFloat(row[i]) || 0;
-                        const sign = selectedSigns.get(i) || 1;
-                        sum += val * sign;
-                    });
-                    checkVal(r, target, sum, row[target]);
-                }
-            }
-
-            // 5. 手動縱向 (Row A +/- Row B = Row C)
-            else if (mode === 'vertical_row') {
-                if (selectedIndices.length < 2) return;
-                const targetRow = selectedIndices[selectedIndices.length-1];
-                const inputRows = selectedIndices.slice(0,-1);
-                
-                for(let c = startColIdx; c < maxCol; c++) {
-                    if(typeof sheetData[targetRow][c]!=='number') continue;
-                    let sum = 0;
-                    inputRows.forEach(r => {
-                        const val = parseFloat(sheetData[r][c]) || 0;
-                        const sign = selectedSigns.get(r) || 1;
-                        sum += val * sign;
-                    });
-                    checkVal(targetRow, c, sum, sheetData[targetRow][c]);
+                if (mode === 'horizontal') {
+                    for(let r = hRowIdx + 1; r < maxRow; r++) {
+                        const row = sheetData[r]; if(!row || typeof row[targetIdx]!=='number') continue;
+                        let sum = 0;
+                        inputs.forEach(i => sum += (parseFloat(row[i])||0) * (selectedSigns.get(i)||1));
+                        checkVal(r, targetIdx, sum, row[targetIdx]);
+                    }
+                } else {
+                    for(let c = startColIdx; c < maxCol; c++) {
+                        if(typeof sheetData[targetIdx][c]!=='number') continue;
+                        let sum = 0;
+                        inputs.forEach(r => sum += (parseFloat(sheetData[r][c])||0) * (selectedSigns.get(r)||1));
+                        checkVal(targetIdx, c, sum, sheetData[targetIdx][c]);
+                    }
                 }
             }
 
@@ -626,77 +548,45 @@
         }
 
         function checkVal(r, c, calculated, current) {
-            // 容許誤差 0.05
-            if (Math.abs(calculated - current) > 0.05) { 
+            if (Math.abs(calculated - current) > 1.0) { // 容許誤差放寬至 1 元
                 const key = r * 10000 + c;
-                const diff = (current - calculated).toFixed(2);
-                lastErrors.set(key, `應為 ${calculated.toLocaleString()} (差 ${diff})`);
+                lastErrors.set(key, `應為 ${calculated.toLocaleString()} (差 ${(current - calculated).toLocaleString()})`);
                 correctionMap.set(key, calculated);
             }
         }
 
-        // === 報告匯出 ===
         function exportHTMLReport() {
             if (correctionMap.size === 0 && lastErrors.size === 0) { alert("無錯誤可匯出"); return; }
-            
             const correctedData = JSON.parse(JSON.stringify(sheetData));
-            correctionMap.forEach((v,k)=>{
-                const r=Math.floor(k/10000), c=k%10000;
-                if(correctedData[r]) correctedData[r][c]=v;
-            });
-
-            // 僅匯出邊界範圍內的資料
+            correctionMap.forEach((v,k)=>{ const r=Math.floor(k/10000), c=k%10000; if(correctedData[r]) correctedData[r][c]=v; });
+            
             const startColIdx = parseInt(document.getElementById('startCol').value) - 1;
             const endColVal = parseInt(document.getElementById('endCol').value);
-            const headersSlice = headers.slice(startColIdx, endColVal);
-
-            let htmlContent = `
-            <!DOCTYPE html><html><head><meta charset="UTF-8"><title>稽核報告</title>
-            <style>body{font-family:'Segoe UI';padding:20px;background:#f8fafc} table{width:100%;border-collapse:collapse;font-size:12px} th,td{border:1px solid #ccc;padding:5px} .err{background:#fecaca;color:#991b1b} .fixed{background:#dcfce7;color:#166534} .diff{color:#dc2626;font-weight:bold}</style>
-            </head><body><h2>📑 稽核報告</h2><p>錯誤數：${lastErrors.size}</p>
-            <h3>原始資料 (錯誤)</h3>${generateTableHTML(sheetData, 'original')}
-            <h3>建議修正</h3>${generateTableHTML(correctedData, 'corrected')}
-            </body></html>`;
-
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `稽核報告.html`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const maxCol = (isNaN(endColVal) || endColVal === 0) ? headers.length : endColVal;
+            
+            let htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>稽核報告</title><style>body{font-family:'Segoe UI';padding:20px} table{width:100%;border-collapse:collapse;font-size:12px} th,td{border:1px solid #ccc;padding:5px} .err{background:#fecaca} .fixed{background:#dcfce7}</style></head><body><h2>稽核報告</h2>${generateTableHTML(sheetData, 'original', startColIdx, maxCol)}</body></html>`;
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([htmlContent], {type:'text/html'})); a.download = `report.html`; a.click();
         }
 
-        function generateTableHTML(data, type) {
+        function generateTableHTML(data, type, sCol, eCol) {
             let hRowIdx = parseInt(document.getElementById('headerRow').value) - 1;
             let endRowVal = parseInt(document.getElementById('endRow').value);
             const maxRow = (isNaN(endRowVal) || endRowVal === 0) ? data.length : endRowVal;
-            let startColIdx = parseInt(document.getElementById('startCol').value) - 1;
-            let endColVal = parseInt(document.getElementById('endCol').value);
-            const maxCol = (isNaN(endColVal) || endColVal === 0) ? headers.length : endColVal;
-
             let html = '<table><thead><tr><th>列</th>';
-            for(let c=startColIdx; c<maxCol; c++) html += `<th>${headers[c]||''}</th>`;
+            for(let c=sCol; c<eCol; c++) html += `<th>${headers[c]||''}</th>`;
             html += '</tr></thead><tbody>';
-
             for (let r = hRowIdx + 1; r < maxRow; r++) {
-                const row = data[r];
-                if (!row) continue;
+                const row = data[r]; if (!row) continue;
                 html += `<tr><td>${r+1}</td>`;
-                for (let c = startColIdx; c < maxCol; c++) {
+                for (let c = sCol; c < eCol; c++) {
                     const key = r * 10000 + c;
-                    const val = row[c];
-                    const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     let cls = '';
                     if (type === 'original' && lastErrors.has(key)) cls = 'err';
-                    if (type === 'corrected' && correctionMap.has(key)) cls = 'fixed';
-                    html += `<td class="${cls}">${display}</td>`;
+                    html += `<td class="${cls}">${(typeof row[c]==='number')?row[c].toLocaleString():(row[c]||'')}</td>`;
                 }
                 html += '</tr>';
             }
-            html += '</tbody></table>';
-            return html;
+            return html + '</tbody></table>';
         }
     </script>
 </body>
