@@ -67,8 +67,27 @@
         /* 互動元素 */
         .clickable-header:hover, .clickable-row:hover { background-color: #dbeafe; cursor: pointer; }
         .col-selected, .row-selected { background-color: #dbeafe !important; }
-        .err-cell { background-color: #fef2f2 !important; border: 2px solid #ef4444 !important; color: #991b1b; }
-        .err-msg { display: block; font-size: 10px; color: #dc2626; margin-top: 2px; }
+        
+        /* === 錯誤樣式修改 === */
+        /* 嚴重錯誤 (>=1) */
+        .err-cell { 
+            background-color: #fef2f2 !important; 
+            border: 2px solid #ef4444 !important; 
+            color: #991b1b; 
+        }
+        .err-msg { 
+            display: block; font-size: 10px; color: #dc2626; margin-top: 2px; 
+        }
+
+        /* 微小誤差 (<1) */
+        .warn-cell { 
+            background-color: #fff7ed !important; 
+            border: 2px solid #f97316 !important; /* 橘色邊框 */
+            color: #c2410c; 
+        }
+        .warn-msg { 
+            display: block; font-size: 10px; color: #ea580c; margin-top: 2px; 
+        }
 
         .logic-tag { 
             padding: 2px 6px; border-radius: 4px; font-weight: bold; color: white; margin: 0 4px; 
@@ -329,7 +348,12 @@
                     const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     
                     if (lastErrors.has(errKey)) {
-                        html += `<td class="err-cell" title="錯誤：${lastErrors.get(errKey)}">${display}<span class="err-msg">${lastErrors.get(errKey)}</span></td>`;
+                        // === 這裡處理錯誤顯示的顏色 ===
+                        const errObj = lastErrors.get(errKey);
+                        const cls = errObj.type === 'minor' ? 'warn-cell' : 'err-cell';
+                        const msgCls = errObj.type === 'minor' ? 'warn-msg' : 'err-msg';
+                        
+                        html += `<td class="${cls}" title="${errObj.msg}">${display}<span class="${msgCls}">${errObj.msg}</span></td>`;
                     } else {
                         let style = '';
                         if (mode === 'vertical_indent' && selectedIndices.includes(c) && typeof val === 'string') {
@@ -552,9 +576,19 @@
         }
 
         function checkVal(r, c, calculated, current) {
-            if (Math.abs(calculated - current) > 1.0) { 
+            const diff = current - calculated;
+            const absDiff = Math.abs(diff);
+
+            // 幾乎嚴格比對 (容許極小浮點數誤差 0.001)
+            if (absDiff > 0.001) {
                 const key = r * 10000 + c;
-                lastErrors.set(key, `應為 ${calculated.toLocaleString()} (差 ${(current - calculated).toLocaleString()})`);
+                const type = absDiff < 1.0 ? 'minor' : 'major';
+                
+                // 儲存錯誤物件而非純文字
+                lastErrors.set(key, {
+                    msg: `應為 ${calculated.toLocaleString()} (差 ${diff.toFixed(2)})`,
+                    type: type
+                });
                 correctionMap.set(key, calculated);
             }
         }
@@ -580,6 +614,7 @@
                 th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; white-space: pre; }
                 th { background: #f1f5f9; font-weight: 600; color: #475569; }
                 .err { background-color: #fecaca; color: #991b1b; font-weight: bold; border: 2px solid #ef4444; }
+                .warn { background-color: #fff7ed; color: #c2410c; font-weight: bold; border: 2px solid #f97316; }
                 .fixed { background-color: #dcfce7; color: #166534; font-weight: bold; }
                 .diff { color: #dc2626; font-weight: bold; }
                 .info { margin-bottom: 20px; padding: 15px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; color: #1e40af; }
@@ -626,7 +661,10 @@
                     const val = row[c];
                     const display = (typeof val === 'number') ? val.toLocaleString() : (val || '');
                     let cls = '';
-                    if (type === 'original' && lastErrors.has(key)) cls = 'err';
+                    if (type === 'original' && lastErrors.has(key)) {
+                        const errObj = lastErrors.get(key);
+                        cls = errObj.type === 'minor' ? 'warn' : 'err';
+                    }
                     if (type === 'corrected' && correctionMap.has(key)) cls = 'fixed';
                     html += `<td class="${cls}">${display}</td>`;
                 }
