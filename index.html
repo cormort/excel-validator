@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SumCheck - 智能 Excel 數值驗算工具，自動檢查合計與小計錯誤">
+  <title>SumCheck | Excel 驗算大師</title>
+
+  <!-- Favicon -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/main.css">
+
+  <!-- SheetJS for Excel parsing -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-brand">
+        <span class="header-logo">✓</span>
+        <h1 class="header-title">SumCheck</h1>
+      </div>
+      <div class="header-actions">
+        <div class="input-group" id="sheetGroup" style="display: none;">
+          <label class="input-label">工作表</label>
+          <select id="sheetSelector" class="select" style="min-width: 140px;"></select>
+        </div>
+        <button id="themeToggle" class="theme-toggle" aria-label="切換主題"></button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Wizard Container -->
+      <div class="wizard-container">
+        <!-- Step Indicators -->
+        <div class="wizard-steps">
+          <div class="wizard-step active" data-step="1">
+            <span class="wizard-step-number">1</span>
+            <span>載入檔案</span>
+          </div>
+          <div class="wizard-connector"></div>
+          <div class="wizard-step" data-step="2">
+            <span class="wizard-step-number">2</span>
+            <span>設定模式</span>
+          </div>
+          <div class="wizard-connector"></div>
+          <div class="wizard-step" data-step="3">
+            <span class="wizard-step-number">3</span>
+            <span>執行驗算</span>
+          </div>
+        </div>
+
+        <!-- Step Contents -->
+        <div class="wizard-content">
+          <!-- Step 1: Upload -->
+          <section class="step-content" data-step="1">
+            <div class="upload-section">
+              <div id="dropzone" class="upload-dropzone">
+                <div class="upload-icon">📁</div>
+                <div class="upload-title">拖曳 Excel 檔案至此處</div>
+                <div class="upload-hint">或點擊選取檔案（支援 .xlsx, .xls）</div>
+              </div>
+              <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+            </div>
+          </section>
+
+          <!-- Step 2: Configure -->
+          <section class="step-content hidden" data-step="2">
+            <div class="config-section">
+              <!-- Smart Detection Panel -->
+              <div id="smartDetectPanel" class="smart-detect hidden">
+                <span class="smart-detect-icon">🤖</span>
+                <div class="smart-detect-content">
+                  <div class="smart-detect-title">智能推薦</div>
+                  <div class="smart-detect-desc">分析中...</div>
+                </div>
+              </div>
+
+              <!-- Mode Selection -->
+              <div class="config-header">
+                <h2 class="config-title">選擇驗算模式</h2>
+                <p class="config-subtitle">根據表格結構選擇最適合的驗算方式</p>
+              </div>
+
+              <div class="mode-grid">
+                <div class="mode-card" data-mode="vertical_group">
+                  <div class="mode-card-icon">↕️</div>
+                  <div class="mode-card-title">縱向 (關鍵字分組)</div>
+                  <div class="mode-card-desc">適用於預算表、財務報表</div>
+                </div>
+                <div class="mode-card" data-mode="vertical_indent">
+                  <div class="mode-card-icon">📊</div>
+                  <div class="mode-card-title">縱向 (縮排分層)</div>
+                  <div class="mode-card-desc">適用於有階層結構的表格</div>
+                </div>
+                <div class="mode-card" data-mode="horizontal_group">
+                  <div class="mode-card-icon">↔️</div>
+                  <div class="mode-card-title">橫向 (關鍵字分組)</div>
+                  <div class="mode-card-desc">適用於一般報表、橫向加總</div>
+                </div>
+                <div class="mode-card" data-mode="horizontal">
+                  <div class="mode-card-icon">↔️</div>
+                  <div class="mode-card-title">橫向 (手動指定)</div>
+                  <div class="mode-card-desc">手動選取欄位設定 A±B=C</div>
+                </div>
+                <div class="mode-card" data-mode="vertical_row">
+                  <div class="mode-card-icon">↕️</div>
+                  <div class="mode-card-title">縱向 (手動指定)</div>
+                  <div class="mode-card-desc">手動選取列設定 A±B=C</div>
+                </div>
+              </div>
+
+              <!-- Settings Accordions -->
+              <div class="mt-lg">
+                <!-- Range Settings -->
+                <div class="settings-accordion">
+                  <div class="settings-accordion-header">
+                    <span class="settings-accordion-title">
+                      <span>📐</span> 資料範圍設定
+                    </span>
+                    <span class="settings-accordion-icon">▼</span>
+                  </div>
+                  <div class="settings-accordion-body">
+                    <div class="settings-row">
+                      <div class="input-group">
+                        <label class="input-label">標題列號</label>
+                        <input type="number" id="headerRow" class="input" value="1" min="1" style="width: 80px;">
+                      </div>
+                      <div class="input-group">
+                        <label class="input-label">結束列號</label>
+                        <input type="number" id="endRow" class="input" placeholder="自動" min="1" style="width: 80px;">
+                      </div>
+                      <div class="input-group">
+                        <label class="input-label">起始欄</label>
+                        <input type="number" id="startCol" class="input" value="1" min="1" style="width: 80px;">
+                      </div>
+                      <div class="input-group">
+                        <label class="input-label">結束欄</label>
+                        <input type="number" id="endCol" class="input" placeholder="自動" min="1" style="width: 80px;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Keyword Settings -->
+                <div id="keywordSettings" class="settings-accordion open">
+                  <div class="settings-accordion-header">
+                    <span class="settings-accordion-title">
+                      <span>🔑</span> 關鍵字設定
+                    </span>
+                    <span class="settings-accordion-icon">▼</span>
+                  </div>
+                  <div class="settings-accordion-body">
+                    <div class="settings-row">
+                      <div class="input-group" style="flex: 1;">
+                        <label class="input-label">分組關鍵字 (觸發結算)</label>
+                        <input type="text" id="keyword1" class="input" value="主管, 小計, 核定" placeholder="以逗號分隔">
+                      </div>
+                      <div class="input-group" style="flex: 1;">
+                        <label class="input-label">排除關鍵字 (忽略)</label>
+                        <input type="text" id="keyword2" class="input" value="合計, 總計" placeholder="以逗號分隔">
+                      </div>
+                      <div class="input-group" id="sumDirectionGroup">
+                        <label class="input-label">加總位置</label>
+                        <select id="sumDirection" class="select">
+                          <option value="top">⬆️ 加總在上方 (歸戶式)</option>
+                          <option value="bottom">⬇️ 加總在下方 (會計式)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Step 3: Validate -->
+          <section class="step-content hidden" data-step="3">
+            <div class="validate-section">
+              <!-- Toolbar -->
+              <div class="validate-toolbar">
+                <div class="validate-info">
+                  <span id="logicHint" class="text-muted">請點選欄位以設定驗算邏輯</span>
+                </div>
+                <div class="validate-actions">
+                  <button id="btnValidate" class="btn btn-success">
+                    <span>✓</span> 執行驗算
+                  </button>
+                  <button id="btnDownload" class="btn btn-danger">
+                    <span>📑</span> 下載報告
+                  </button>
+                  <button id="btnReset" class="btn btn-outline">
+                    <span>↺</span> 重置
+                  </button>
+                </div>
+              </div>
+
+              <!-- Grid Container -->
+              <div id="gridContainer" class="grid-container">
+                <div class="grid-placeholder">
+                  <div class="grid-placeholder-icon">📂</div>
+                  <div>請先載入 Excel 檔案</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between" style="padding: 0 var(--spacing-xl) var(--spacing-xl);">
+          <button id="btnPrev" class="btn btn-outline hidden">
+            <span>←</span> 上一步
+          </button>
+          <div style="flex: 1;"></div>
+          <button id="btnNext" class="btn btn-primary">
+            下一步 <span>→</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Error Panel (Floating) -->
+    <div id="errorPanel" class="error-panel hidden">
+      <div class="error-panel-header">
+        <span class="error-panel-icon">⚠️</span>
+        <span class="error-panel-title">發現 <strong id="errorCount">0</strong> 個錯誤</span>
+      </div>
+      <div class="error-panel-body">
+        <div class="error-stat">
+          <span class="error-stat-label">差異總額</span>
+          <span class="error-stat-value" id="errorDiff">0</span>
+        </div>
+        <div class="error-nav">
+          <button id="btnPrevError" class="btn btn-outline btn-sm">← 上一個</button>
+          <button id="btnNextError" class="btn btn-outline btn-sm">下一個 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drop Overlay -->
+    <div id="dropOverlay" class="drop-overlay">
+      <div class="drop-overlay-icon">📂</div>
+      <div class="drop-overlay-text">放開滑鼠以載入檔案</div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">處理中...</div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 1000;"></div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/smart-detect.js"></script>
+  <script src="js/excel-parser.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/ui-controller.js"></script>
+  <script src="js/report.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

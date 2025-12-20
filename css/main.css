@@ -1,0 +1,508 @@
+/* ===========================================
+   Excel 驗算大師 - 主樣式整合
+   =========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* === Reset & Base === */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--font-sans);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    line-height: 1.5;
+    min-height: 100vh;
+    transition: background var(--transition-normal), color var(--transition-normal);
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* === App Layout === */
+.app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* === Header === */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-xl);
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.header-logo {
+    font-size: 28px;
+}
+
+.header-title {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--success));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+/* === Main Content === */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-lg);
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* === Wizard Container === */
+.wizard-container {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-bottom: var(--spacing-lg);
+}
+
+.wizard-content {
+    padding: var(--spacing-xl);
+}
+
+/* === Step 1: Upload === */
+.upload-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-xl);
+}
+
+.upload-dropzone {
+    width: 100%;
+    max-width: 500px;
+    padding: 60px 40px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--bg-secondary);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    font-size: 64px;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.8;
+}
+
+.upload-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.upload-hint {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+/* === Step 2: Configure === */
+.config-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.config-header {
+    text-align: center;
+}
+
+.config-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+}
+
+.config-subtitle {
+    color: var(--text-muted);
+}
+
+.mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.settings-accordion {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.settings-accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-secondary);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.settings-accordion-header:hover {
+    background: var(--bg-tertiary);
+}
+
+.settings-accordion-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-weight: 600;
+}
+
+.settings-accordion-icon {
+    transition: transform var(--transition-fast);
+}
+
+.settings-accordion.open .settings-accordion-icon {
+    transform: rotate(180deg);
+}
+
+.settings-accordion-body {
+    padding: var(--spacing-lg);
+    display: none;
+}
+
+.settings-accordion.open .settings-accordion-body {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.settings-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+}
+
+/* === Step 3: Validate === */
+.validate-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.validate-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+}
+
+.validate-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.validate-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* === Grid Container === */
+.grid-container {
+    flex: 1;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: auto;
+    min-height: 400px;
+}
+
+.grid-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 400px;
+    color: var(--text-muted);
+}
+
+.grid-placeholder-icon {
+    font-size: 48px;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+/* === Logic Display === */
+.logic-display {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--primary-light);
+    border-radius: var(--radius-md);
+    color: var(--primary);
+    font-size: 14px;
+}
+
+/* === Dropzone Overlay === */
+.drop-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(99, 102, 241, 0.95);
+    z-index: 5000;
+    color: white;
+}
+
+.drop-overlay.active {
+    display: flex;
+}
+
+.drop-overlay-icon {
+    font-size: 80px;
+    margin-bottom: var(--spacing-lg);
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.drop-overlay-text {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* === Smart Detection Panel === */
+.smart-detect {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--success-light);
+    border: 1px solid var(--success);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.smart-detect-icon {
+    font-size: 24px;
+}
+
+.smart-detect-content {
+    flex: 1;
+}
+
+.smart-detect-title {
+    font-weight: 600;
+    color: var(--success);
+    margin-bottom: 2px;
+}
+
+.smart-detect-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.smart-detect-confidence {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.confidence-bar {
+    width: 60px;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: var(--success);
+    border-radius: 3px;
+    transition: width var(--transition-normal);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .header {
+        padding: var(--spacing-md);
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+
+    .header-title {
+        font-size: 16px;
+    }
+
+    .main {
+        padding: var(--spacing-md);
+    }
+
+    .wizard-content {
+        padding: var(--spacing-md);
+    }
+
+    .mode-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .validate-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .validate-actions {
+        justify-content: center;
+    }
+
+    .error-panel {
+        left: var(--spacing-md);
+        right: var(--spacing-md);
+        width: auto;
+    }
+}
+
+/* === Utility Classes === */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.mt-sm {
+    margin-top: var(--spacing-sm);
+}
+
+.mt-md {
+    margin-top: var(--spacing-md);
+}
+
+.mt-lg {
+    margin-top: var(--spacing-lg);
+}
+
+.mb-sm {
+    margin-bottom: var(--spacing-sm);
+}
+
+.mb-md {
+    margin-bottom: var(--spacing-md);
+}
+
+.mb-lg {
+    margin-bottom: var(--spacing-lg);
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.gap-sm {
+    gap: var(--spacing-sm);
+}
+
+.gap-md {
+    gap: var(--spacing-md);
+}
+
+.gap-lg {
+    gap: var(--spacing-lg);
+}
