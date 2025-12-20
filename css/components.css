@@ -486,6 +486,83 @@
     color: var(--text-muted);
 }
 
+/* Mode Example Tables */
+.mode-example {
+    width: 100%;
+    margin-top: var(--spacing-md);
+    border-collapse: collapse;
+    font-size: 11px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.mode-example th,
+.mode-example td {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.mode-example th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.mode-example .example-key {
+    background: #fef3c7;
+    color: #92400e;
+    font-weight: 600;
+}
+
+.mode-example .example-sum {
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 700;
+}
+
+.mode-example .example-a {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.mode-example .example-b {
+    background: #fce7f3;
+    color: #9d174d;
+}
+
+.mode-example .example-c {
+    background: #d1fae5;
+    color: #065f46;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .mode-example .example-key {
+    background: #78350f;
+    color: #fef3c7;
+}
+
+[data-theme="dark"] .mode-example .example-sum {
+    background: #064e3b;
+    color: #d1fae5;
+}
+
+[data-theme="dark"] .mode-example .example-a {
+    background: #1e3a8a;
+    color: #dbeafe;
+}
+
+[data-theme="dark"] .mode-example .example-b {
+    background: #831843;
+    color: #fce7f3;
+}
+
+[data-theme="dark"] .mode-example .example-c {
+    background: #064e3b;
+    color: #d1fae5;
+}
+
 /* === 載入動畫 === */
 .loading-overlay {
     position: fixed;
