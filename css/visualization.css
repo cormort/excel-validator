@@ -1,0 +1,559 @@
+/* ===========================================
+    Excel 驗算大師 - 可視化組件樣式
+    =========================================== */
+
+/* === Data Table with Errors === */
+.data-table-with-errors {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table-header {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-header.has-error {
+  background: linear-gradient(135deg, var(--error-light), var(--bg-tertiary));
+  border-color: var(--error);
+}
+
+.table-row {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.table-row:hover {
+  background: var(--bg-tertiary);
+}
+
+.table-cell {
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+/* Error Cell Styles */
+.error-cell {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.1),
+    rgba(239, 68, 68, 0.05)
+  );
+  border: 2px solid var(--error);
+  cursor: pointer;
+  animation: errorPulse 2s ease-in-out infinite;
+}
+
+@keyframes errorPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 0 rgba(239, 68, 68, 0.3);
+  }
+}
+
+.error-cell.error-highlighted {
+  background: linear-gradient(135deg, var(--error-light), var(--bg-primary));
+  transform: scale(1.1);
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.error-cell.error-hover {
+  background: var(--error-light);
+  transform: scale(1.05);
+}
+
+.related-cell {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+/* === Error List === */
+.error-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+}
+
+.error-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  color: var(--text-muted);
+}
+
+.error-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-md);
+}
+
+.error-empty-text {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.error-item {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.error-item:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.error-item.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: var(--shadow-md);
+}
+
+.error-item-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.error-item-icon {
+  font-size: 18px;
+}
+
+.error-item-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.error-item-type {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.error-item-location {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-sm);
+}
+
+.error-item-diff {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 13px;
+}
+
+.error-diff-label {
+  color: var(--text-muted);
+}
+
+.error-diff-expected {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.error-diff-actual {
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* === Error Modal === */
+.error-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.error-modal.visible {
+  opacity: 1;
+}
+
+.error-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.error-modal-content {
+  position: relative;
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: transform var(--transition-normal);
+}
+
+.error-modal.visible .error-modal-content {
+  transform: scale(1);
+}
+
+.error-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border);
+}
+
+.error-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.error-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.error-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.error-modal-body {
+  padding: var(--spacing-lg);
+}
+
+.error-modal-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.error-modal-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-xs);
+}
+
+.error-modal-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.error-modal-type {
+  background: var(--error-light);
+  color: var(--error);
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+}
+
+.error-modal-expected {
+  color: var(--success);
+}
+
+.error-modal-actual {
+  color: var(--error);
+}
+
+.error-modal-diff {
+  color: var(--warning);
+}
+
+.error-modal-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+.error-modal-fix {
+  flex: 1;
+}
+
+/* === Preview Toolbar === */
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  gap: var(--spacing-md);
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: var(--bg-secondary);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-md);
+}
+
+.toolbar-separator {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.toolbar-label {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 45px;
+  text-align: center;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.toolbar-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.toolbar-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+.toolbar-info {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* === Preview Table === */
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  transition: transform var(--transition-normal);
+}
+
+.preview-header {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.preview-header:hover {
+  background: var(--primary-light);
+}
+
+.preview-header-frozen {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.preview-row {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.preview-row:hover {
+  background: var(--bg-tertiary);
+}
+
+.preview-cell {
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.preview-cell.cell-selected {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.preview-cell.cell-error {
+  background: var(--error-light);
+  border-color: var(--error);
+}
+
+.preview-cell.cell-warning {
+  background: var(--warning-light);
+  border-color: var(--warning);
+}
+
+.preview-cell.cell-filtered {
+  background: rgba(0, 0, 0, 0.05);
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* === Filter Panel === */
+.filter-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  width: 400px;
+  max-width: 90vw;
+  z-index: 1500;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition-normal);
+}
+
+.filter-panel.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.filter-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.filter-body {
+  padding: var(--spacing-lg);
+}
+
+.filter-body input[type="text"] {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  margin-bottom: var(--spacing-md);
+}
+
+.filter-options {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.filter-options label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+}
+
+.filter-actions {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .error-modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .preview-toolbar {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .toolbar-info {
+    width: 100%;
+    text-align: center;
+  }
+
+  .filter-panel {
+    width: 90vw;
+  }
+
+  .error-item {
+    padding: var(--spacing-sm);
+  }
+
+  .error-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .data-table-with-errors,
+  .preview-table {
+    font-size: 12px;
+  }
+
+  .table-cell,
+  .preview-cell {
+    padding: 6px;
+  }
+
+  .preview-toolbar {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .toolbar-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .toolbar-label {
+    min-width: 40px;
+    font-size: 12px;
+  }
+}
