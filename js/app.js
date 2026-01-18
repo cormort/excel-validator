@@ -1,5 +1,5 @@
 /**
- * SumCheck - 應用程式入口
+ * SumCheck - 應用程式入口 (Flat Toolbar Version)
  * 整合所有模組並管理應用程式狀態
  */
 
@@ -12,7 +12,7 @@ const App = {
      * 初始化應用程式
      */
     init() {
-        console.log('✓ SumCheck v2.0');
+        console.log('✓ SumCheck v2.1 (Flat Toolbar)');
 
         // 初始化 UI
         UIController.init();
@@ -20,43 +20,7 @@ const App = {
         // 設定預設模式
         this.setMode('vertical_group');
 
-        // 綁定全域事件
-        this._bindGlobalEvents();
-
         console.log('✅ 應用程式初始化完成');
-    },
-
-    /**
-     * 綁定全域事件
-     */
-    _bindGlobalEvents() {
-        // 工作表切換
-        document.getElementById('sheetSelector')?.addEventListener('change', (e) => {
-            this.switchSheet(e.target.value);
-        });
-
-        // 驗算按鈕
-        document.getElementById('btnValidate')?.addEventListener('click', () => {
-            this.runValidation();
-        });
-
-        // 下載報告
-        document.getElementById('btnDownload')?.addEventListener('click', () => {
-            this.downloadReport();
-        });
-
-        // 重置
-        document.getElementById('btnReset')?.addEventListener('click', () => {
-            this.reset();
-        });
-
-        // 錯誤導航
-        document.getElementById('btnPrevError')?.addEventListener('click', () => {
-            UIController.navigateError('prev');
-        });
-        document.getElementById('btnNextError')?.addEventListener('click', () => {
-            UIController.navigateError('next');
-        });
     },
 
     /**
@@ -144,11 +108,11 @@ const App = {
         const data = ExcelParser.getData();
         if (!data || data.length === 0) {
             container.innerHTML = `
-        <div class="grid-placeholder">
-          <div class="grid-placeholder-icon">📂</div>
-          <div>請先載入 Excel 檔案</div>
-        </div>
-      `;
+                <div class="grid-placeholder">
+                    <div class="grid-placeholder-icon">📂</div>
+                    <div>請先載入 Excel 檔案</div>
+                </div>
+            `;
             return;
         }
 
