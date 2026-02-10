@@ -34,6 +34,10 @@
           <span class="header-logo">✓</span>
           <h1 class="header-title">SumCheck</h1>
         </div>
+        <nav class="header-tabs">
+          <button class="tab-btn active" data-tab="file-page">📁 載入檔案</button>
+          <button class="tab-btn" data-tab="paste-page">📋 貼上內容</button>
+        </nav>
         <div class="header-actions">
           <button
             id="themeToggle"
@@ -42,6 +46,9 @@
           ></button>
         </div>
       </header>
+
+      <!-- Tab 1: File Page -->
+      <div id="file-page" class="tab-page">
 
       <!-- Toolbar -->
       <div class="toolbar">
@@ -343,6 +350,259 @@
         <div class="loading-text">處理中...</div>
       </div>
 
+      </div><!-- end #file-page -->
+
+      <!-- Tab 2: Paste Page -->
+      <div id="paste-page" class="tab-page hidden">
+
+        <!-- Paste Toolbar -->
+        <div class="toolbar">
+          <!-- 左側：重新貼上 -->
+          <div class="toolbar-group">
+            <button id="p-btnRepaste" class="btn btn-primary">
+              <span>📋</span> 重新貼上
+            </button>
+          </div>
+
+          <!-- 中間：模式選擇 -->
+          <div class="toolbar-group">
+            <label class="toolbar-label">驗算模式</label>
+            <select id="p-calcMode" class="select select-mode">
+              <option value="vertical_group">
+                ↕️ 縱向 (關鍵字分組) - 適用預算表
+              </option>
+              <option value="vertical_indent">
+                ↕️ 縱向 (縮排分層) - 適用階層結構
+              </option>
+              <option value="horizontal_group">
+                ↔️ 橫向 (關鍵字分組) - 適用一般報表
+              </option>
+              <option value="horizontal">↔️ 橫向 (手動指定) - 設定 A±B=C</option>
+              <option value="vertical_row">
+                ↕️ 縱向 (手動指定) - 設定 A±B=C
+              </option>
+            </select>
+            <button id="p-btnModeHelp" class="btn btn-ghost btn-icon-sm" title="查看模式說明">
+              ❓
+            </button>
+          </div>
+
+          <!-- 配置 Toggle -->
+          <div class="toolbar-group">
+            <button
+              id="p-btnRangeConfig"
+              class="btn btn-outline btn-toggle"
+              title="設定資料讀取的範圍"
+            >
+              <span>📐</span> 設定範圍
+            </button>
+            <button
+              id="p-btnLogicConfig"
+              class="btn btn-outline btn-toggle"
+              title="設定關鍵字與加總邏輯"
+            >
+              <span>🔑</span> 設定邏輯
+            </button>
+          </div>
+
+          <!-- 右側：執行操作 -->
+          <div class="toolbar-group toolbar-actions">
+            <button id="p-btnValidate" class="btn btn-success" title="開始執行驗算">
+              <span>✓</span> 執行驗算
+            </button>
+            <button id="p-btnDownload" class="btn btn-danger" title="下載錯誤報告">
+              <span>📑</span> 下載報告
+            </button>
+            <button id="p-btnReset" class="btn btn-outline" title="重置所有設定">
+              <span>↺</span> 重置
+            </button>
+          </div>
+        </div>
+
+        <!-- 模式說明面板 -->
+        <div id="p-modeHelpPanel" class="mode-help-panel hidden">
+          <div class="mode-help-header">
+            <h3>📖 驗算模式說明</h3>
+            <button id="p-btnCloseModeHelp" class="btn btn-ghost btn-icon-sm">✕</button>
+          </div>
+          <div class="mode-help-content">
+            <div class="mode-grid">
+              <div class="mode-card" data-mode="vertical_group">
+                <div class="mode-card-icon">↕️</div>
+                <div class="mode-card-title">縱向 (關鍵字分組)</div>
+                <div class="mode-card-desc">適用於預算表、財務報表</div>
+                <table class="mode-example">
+                  <tr><td class="example-key">主管一</td><td class="example-sum">300</td></tr>
+                  <tr><td>　項目 A</td><td>100</td></tr>
+                  <tr><td>　項目 B</td><td>200</td></tr>
+                  <tr><td class="example-key">主管二</td><td class="example-sum">150</td></tr>
+                  <tr><td>　項目 C</td><td>150</td></tr>
+                </table>
+              </div>
+              <div class="mode-card" data-mode="vertical_indent">
+                <div class="mode-card-icon">📊</div>
+                <div class="mode-card-title">縱向 (縮排分層)</div>
+                <div class="mode-card-desc">適用於有階層結構的表格</div>
+                <table class="mode-example">
+                  <tr><td class="example-sum">總計</td><td class="example-sum">600</td></tr>
+                  <tr><td>　類別一</td><td>350</td></tr>
+                  <tr><td>　　子項 A</td><td>200</td></tr>
+                  <tr><td>　　子項 B</td><td>150</td></tr>
+                  <tr><td>　類別二</td><td>250</td></tr>
+                </table>
+              </div>
+              <div class="mode-card" data-mode="horizontal_group">
+                <div class="mode-card-icon">↔️</div>
+                <div class="mode-card-title">橫向 (關鍵字分組)</div>
+                <div class="mode-card-desc">適用於一般報表、橫向加總</div>
+                <table class="mode-example">
+                  <tr><th>項目</th><th>Q1</th><th>Q2</th><th class="example-key">小計</th></tr>
+                  <tr><td>營收</td><td>100</td><td>200</td><td class="example-sum">300</td></tr>
+                  <tr><td>成本</td><td>50</td><td>80</td><td class="example-sum">130</td></tr>
+                </table>
+              </div>
+              <div class="mode-card" data-mode="horizontal">
+                <div class="mode-card-icon">↔️</div>
+                <div class="mode-card-title">橫向 (手動指定)</div>
+                <div class="mode-card-desc">手動選取欄位設定 A±B=C</div>
+                <table class="mode-example">
+                  <tr><th>項目</th><th class="example-a">A</th><th class="example-b">B</th><th class="example-c">=C</th></tr>
+                  <tr><td>收入</td><td class="example-a">500</td><td class="example-b">200</td><td class="example-c">700</td></tr>
+                  <tr><td>支出</td><td class="example-a">300</td><td class="example-b">100</td><td class="example-c">400</td></tr>
+                </table>
+              </div>
+              <div class="mode-card" data-mode="vertical_row">
+                <div class="mode-card-icon">↕️</div>
+                <div class="mode-card-title">縱向 (手動指定)</div>
+                <div class="mode-card-desc">手動選取列設定 A±B=C</div>
+                <table class="mode-example">
+                  <tr><th>月份</th><th>金額</th></tr>
+                  <tr class="example-a"><td>1月</td><td>100</td></tr>
+                  <tr class="example-b"><td>2月</td><td>200</td></tr>
+                  <tr class="example-c"><td>=合計</td><td>300</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 配置面板：範圍設定 -->
+        <div id="p-rangeConfigPanel" class="config-panel hidden">
+          <div class="config-row">
+            <div class="input-group">
+              <label class="input-label">標題列號</label>
+              <input type="number" id="p-headerRow" class="input" value="1" min="1" style="width: 80px" />
+            </div>
+            <div class="input-group">
+              <label class="input-label">結束列號 (自動=空)</label>
+              <input type="number" id="p-endRow" class="input" placeholder="自動" min="1" style="width: 80px" />
+            </div>
+            <div class="input-group">
+              <label class="input-label">起始欄</label>
+              <input type="number" id="p-startCol" class="input" value="1" min="1" style="width: 80px" />
+            </div>
+            <div class="input-group">
+              <label class="input-label">結束欄 (自動=空)</label>
+              <input type="number" id="p-endCol" class="input" placeholder="自動" min="1" style="width: 80px" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 配置面板：邏輯設定 -->
+        <div id="p-logicConfigPanel" class="config-panel hidden">
+          <div class="config-row">
+            <div class="input-group" style="flex: 1">
+              <label class="input-label">關鍵字 1 (觸發結算)</label>
+              <input type="text" id="p-keyword1" class="input" value="主管, 小計, 核定" placeholder="以逗號分隔" />
+            </div>
+            <div class="input-group" style="flex: 1">
+              <label class="input-label">關鍵字 2 (排除忽略)</label>
+              <input type="text" id="p-keyword2" class="input" value="合計, 總計" placeholder="以逗號分隔" />
+            </div>
+            <div class="input-group" id="p-sumDirectionGroup">
+              <label class="input-label">加總位置 (重要!)</label>
+              <select id="p-sumDirection" class="select">
+                <option value="top">⬆️ 加總在上方 (歸戶式)</option>
+                <option value="bottom">⬇️ 加總在下方 (會計式)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 智能偵測提示 -->
+        <div id="p-smartDetectPanel" class="smart-detect-bar hidden">
+          <span class="smart-detect-icon">🤖</span>
+          <span class="smart-detect-text">智能推薦：</span>
+          <span id="p-smartDetectResult" class="smart-detect-result"></span>
+          <button id="p-btnApplyRecommend" class="btn btn-sm btn-primary">
+            套用
+          </button>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+          <!-- 貼上區 (初始狀態) -->
+          <div id="p-pasteArea" class="paste-dropzone">
+            <div class="upload-icon">📋</div>
+            <div class="upload-title">貼上 Excel 內容</div>
+            <div class="upload-hint">
+              在 Excel 中選取範圍 → 複製 (Ctrl+C) → 在下方文字框中貼上 (Ctrl+V)
+            </div>
+            <textarea
+              id="p-pasteInput"
+              class="paste-textarea"
+              placeholder="在此貼上 Excel 複製的內容..."
+              rows="6"
+            ></textarea>
+          </div>
+
+          <!-- 資料表格 (貼上後顯示) -->
+          <div id="p-gridContainer" class="grid-container hidden">
+            <div class="grid-placeholder">
+              <div class="grid-placeholder-icon">📋</div>
+              <div>請先貼上 Excel 內容</div>
+            </div>
+          </div>
+
+          <!-- 操作提示 (手動模式時顯示) -->
+          <div id="p-logicHint" class="logic-hint hidden">
+            <span class="hint-icon">💡</span>
+            <span id="p-logicHintText">請點選欄位以設定驗算邏輯 (A + B = C)</span>
+          </div>
+        </main>
+
+        <!-- Error Panel (Floating) -->
+        <div id="p-errorPanel" class="error-panel hidden">
+          <div class="error-panel-header">
+            <span class="error-panel-icon">⚠️</span>
+            <span class="error-panel-title"
+              >發現 <strong id="p-errorCount">0</strong> 個錯誤</span
+            >
+          </div>
+          <div class="error-panel-body">
+            <div class="error-stat">
+              <span class="error-stat-label">差異總額</span>
+              <span class="error-stat-value" id="p-errorDiff">0</span>
+            </div>
+            <div class="error-nav">
+              <button id="p-btnPrevError" class="btn btn-outline btn-sm">
+                ← 上一個
+              </button>
+              <button id="p-btnNextError" class="btn btn-outline btn-sm">
+                下一個 →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="p-loadingOverlay" class="loading-overlay hidden">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">處理中...</div>
+        </div>
+
+      </div><!-- end #paste-page -->
+
       <!-- Toast Container -->
       <div
         id="toastContainer"
@@ -365,5 +625,8 @@
     <script src="js/ui-controller.js"></script>
     <script src="js/app.js"></script>
     <script src="js/report.js"></script>
+    <script src="js/paste-ui-controller.js"></script>
+    <script src="js/paste-app.js"></script>
+    <script src="js/tabs.js"></script>
   </body>
 </html>
