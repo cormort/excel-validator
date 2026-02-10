@@ -19,6 +19,11 @@ const PasteApp = {
     init() {
         PasteUIController.init();
         this.setMode('vertical_group');
+        // Bind grid events once on the container (not per render)
+        const gridContainer = document.getElementById('p-gridContainer');
+        if (gridContainer) {
+            this._bindGridEvents(gridContainer);
+        }
         console.log('✓ PasteApp initialized');
     },
 
@@ -239,8 +244,6 @@ const PasteApp = {
 
         html += '</tbody></table>';
         container.innerHTML = html;
-
-        this._bindGridEvents(container);
     },
 
     /**

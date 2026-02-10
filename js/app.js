@@ -17,6 +17,10 @@ const App = {
         // 初始化 UI
         UIController.init();
 
+        // 綁定表格事件 (只綁定一次，避免 listener 累積)
+        const container = document.getElementById('gridContainer');
+        if (container) this._bindGridEvents(container);
+
         // 設定預設模式
         this.setMode('vertical_group');
 
@@ -208,9 +212,6 @@ const App = {
 
         html += '</tbody></table>';
         container.innerHTML = html;
-
-        // 綁定表格事件
-        this._bindGridEvents(container);
     },
 
     /**
