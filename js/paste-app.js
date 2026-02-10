@@ -168,7 +168,7 @@ const PasteApp = {
 
         for (let c = sColIdx; c < maxCol; c++) {
             const h = headers[c];
-            const isSelected = PasteUIController.selectedIndices.includes(c);
+            const isSelected = this.currentMode !== 'vertical_row' && PasteUIController.selectedIndices.includes(c);
             const isClickable = ['horizontal', 'vertical_group', 'vertical_indent'].includes(this.currentMode);
 
             let badge = '';
@@ -197,7 +197,7 @@ const PasteApp = {
 
         for (let r = hRowIdx + 1; r < maxRow; r++) {
             const row = data[r] || [];
-            const isRowSelected = PasteUIController.selectedIndices.includes(r);
+            const isRowSelected = this.currentMode === 'vertical_row' && PasteUIController.selectedIndices.includes(r);
             const isRowClickable = this.currentMode === 'vertical_row';
 
             let rowBadge = '';
@@ -230,7 +230,7 @@ const PasteApp = {
 
                 if (hasError) {
                     cellClass = 'err-cell';
-                } else if (isRowSelected || PasteUIController.selectedIndices.includes(c)) {
+                } else if (isRowSelected || (this.currentMode !== 'vertical_row' && PasteUIController.selectedIndices.includes(c))) {
                     style = 'background: var(--primary-light);';
                 }
 

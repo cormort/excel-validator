@@ -135,7 +135,7 @@ const App = {
         // 標題列
         for (let c = sColIdx; c < maxCol; c++) {
             const h = headers[c];
-            const isSelected = UIController.selectedIndices.includes(c);
+            const isSelected = this.currentMode !== 'vertical_row' && UIController.selectedIndices.includes(c);
             const isClickable = ['horizontal', 'vertical_group', 'vertical_indent'].includes(this.currentMode);
 
             let badge = '';
@@ -165,7 +165,7 @@ const App = {
         // 資料列
         for (let r = hRowIdx + 1; r < maxRow; r++) {
             const row = data[r] || [];
-            const isRowSelected = UIController.selectedIndices.includes(r);
+            const isRowSelected = this.currentMode === 'vertical_row' && UIController.selectedIndices.includes(r);
             const isRowClickable = this.currentMode === 'vertical_row';
 
             let rowBadge = '';
@@ -198,7 +198,7 @@ const App = {
 
                 if (hasError) {
                     cellClass = 'err-cell';
-                } else if (isRowSelected || UIController.selectedIndices.includes(c)) {
+                } else if (isRowSelected || (this.currentMode !== 'vertical_row' && UIController.selectedIndices.includes(c))) {
                     style = 'background: var(--primary-light);';
                 }
 
