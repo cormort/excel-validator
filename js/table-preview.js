@@ -252,17 +252,12 @@ const TablePreview = {
     const table = document.querySelector(".preview-table");
     if (table) {
       table.style.transform = `scale(${this.state.zoomLevel})`;
+      table.style.transformOrigin = "top left";
     }
 
     // 更新標籤
     if (this.elements.zoomLabel) {
       this.elements.zoomLabel.textContent = `${Math.round(this.state.zoomLevel * 100)}%`;
-    }
-
-    // 更新容器寬度
-    const container = this.elements.gridContainer;
-    if (container) {
-      container.style.width = `${100 * this.state.zoomLevel}%`;
     }
   },
 
