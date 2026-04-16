@@ -48,6 +48,9 @@ const App = {
                 document.getElementById('endCol').value = range.endCol;
             }
 
+            // 更新 Store
+            Store.setState({ sheetData: ExcelParser.getData() });
+
             // 執行智能偵測
             this._runSmartDetection();
 
@@ -62,16 +65,18 @@ const App = {
      * 切換工作表
      */
     switchSheet(sheetName) {
-        ExcelParser.loadSheet(sheetName);
+        const range = ExcelParser.loadSheet(sheetName);
         Validator.reset();
         UIController.reset();
 
-        const range = ExcelParser.detectDataRange();
         if (range) {
             document.getElementById('headerRow').value = range.headerRow;
             document.getElementById('endRow').value = range.endRow;
+            document.getElementById('startCol').value = range.startCol;
+            document.getElementById('endCol').value = range.endCol;
         }
 
+        Store.setState({ sheetData: ExcelParser.getData() });
         this._runSmartDetection();
         this.renderGrid();
     },
