@@ -133,8 +133,8 @@ a:hover {
 .paste-dropzone {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-start;
   flex: 1;
   min-height: 400px;
   padding: 40px 60px;
@@ -156,7 +156,6 @@ a:hover {
 
 .paste-textarea {
   width: 100%;
-  max-width: 600px;
   margin-top: var(--spacing-lg);
   padding: var(--spacing-md);
   font-family: var(--font-mono, 'Consolas', 'Monaco', monospace);
@@ -441,6 +440,7 @@ a:hover {
   font-size: 72px;
   margin-bottom: var(--spacing-lg);
   opacity: 0.7;
+  align-self: center;
 }
 
 .upload-title {
@@ -448,6 +448,7 @@ a:hover {
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--spacing-sm);
+  align-self: center;
 }
 
 .upload-hint {
