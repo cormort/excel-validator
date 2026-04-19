@@ -656,6 +656,7 @@ a:hover {
 
   .config-row {
     flex-direction: column;
+    align-items: flex-start;
     gap: var(--spacing-md);
   }
 
