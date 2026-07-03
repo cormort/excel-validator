@@ -137,7 +137,7 @@ a:hover {
   justify-content: flex-start;
   flex: 1;
   min-height: 400px;
-  padding: 40px 60px;
+  padding: var(--spacing-md);
   border: 3px dashed var(--border);
   border-radius: var(--radius-xl);
   background: var(--bg-primary);
@@ -156,7 +156,7 @@ a:hover {
 
 .paste-textarea {
   width: 100%;
-  margin-top: var(--spacing-lg);
+  flex: 1;
   padding: var(--spacing-md);
   font-family: var(--font-mono, 'Consolas', 'Monaco', monospace);
   font-size: 13px;
