@@ -236,8 +236,8 @@ const PasteUIController = {
             if (isManualMode && PasteApp.isLoaded) {
                 this.elements.logicHint.classList.remove('hidden');
                 const hintText = mode === 'horizontal'
-                    ? '請點選欄位標題以設定驗算邏輯 (第一個點選 = 結果欄)'
-                    : '請點選列號以設定驗算邏輯 (第一個點選 = 結果列)';
+                    ? '請點選欄位標題組合算式（最後點選的為結果欄）'
+                    : '請點選列號組合算式（最後點選的為結果列）';
                 if (this.elements.logicHintText) this.elements.logicHintText.textContent = hintText;
             } else {
                 this.elements.logicHint.classList.add('hidden');
@@ -321,23 +321,30 @@ const PasteUIController = {
      */
     toggleSelection(index) {
         const pos = this.selectedIndices.indexOf(index);
-        if (pos > -1) {
+        const isTarget =
+            pos > -1 &&
+            pos === this.selectedIndices.length - 1 &&
+            this.selectedIndices.length > 1;
+
+        if (pos === -1) {
+            this.selectedIndices.push(index);
+            this.selectedSigns.set(index, 1);
+        } else if (isTarget || this.selectedSigns.get(index) === -1) {
+            // 結果欄再點取消；減項再點取消（循環：+ → − → 取消）
             this.selectedIndices.splice(pos, 1);
             this.selectedSigns.delete(index);
         } else {
-            this.selectedIndices.push(index);
-            this.selectedSigns.set(index, 1);
+            this.selectedSigns.set(index, -1);
         }
         PasteApp.renderGrid();
     },
 
     /**
-     * 切換正負號
+     * 清除所有選取
      */
-    toggleSign(index, event) {
-        if (event) event.stopPropagation();
-        const current = this.selectedSigns.get(index) || 1;
-        this.selectedSigns.set(index, current * -1);
+    clearSelection() {
+        this.selectedIndices = [];
+        this.selectedSigns.clear();
         PasteApp.renderGrid();
     },
 

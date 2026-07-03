@@ -21,6 +21,13 @@ const App = {
         const container = document.getElementById('gridContainer');
         if (container) this._bindGridEvents(container);
 
+        // 清除選取
+        ['btnClearLogic', 'btnClearLogicToolbar'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('click', () => {
+                UIController.clearSelection();
+            });
+        });
+
         // 設定預設模式
         this.setMode('vertical_group');
 
@@ -157,7 +164,7 @@ const App = {
                     } else {
                         const sign = UIController.selectedSigns.get(c) || 1;
                         const isPlus = sign === 1;
-                        badge = `<span class="logic-tag interactive" style="background:${isPlus ? 'var(--badge-input)' : 'var(--badge-minus)'}" data-col="${c}" data-action="sign">${isPlus ? '+' : '-'}</span>`;
+                        badge = `<span class="logic-tag" style="background:${isPlus ? 'var(--badge-input)' : 'var(--badge-minus)'}">${isPlus ? '+' : '-'}</span>`;
                     }
                 } else {
                     badge = '<span class="logic-tag" style="background:#f59e0b">鍵</span>';
@@ -187,7 +194,7 @@ const App = {
                 } else {
                     const sign = UIController.selectedSigns.get(r) || 1;
                     const isPlus = sign === 1;
-                    rowBadge = `<span class="logic-tag interactive" style="background:${isPlus ? 'var(--badge-input)' : 'var(--badge-minus)'}" data-row="${r}" data-action="sign">${isPlus ? '+' : '-'}</span>`;
+                    rowBadge = `<span class="logic-tag" style="background:${isPlus ? 'var(--badge-input)' : 'var(--badge-minus)'}">${isPlus ? '+' : '-'}</span>`;
                 }
             }
 
@@ -219,6 +226,38 @@ const App = {
 
         html += '</tbody></table>';
         container.innerHTML = html;
+
+        this._updateFormulaHint(headers);
+    },
+
+    /**
+     * 即時算式預覽（手動模式）
+     */
+    _updateFormulaHint(headers) {
+        const el = document.getElementById('logicHintText');
+        if (!el || !['horizontal', 'vertical_row'].includes(this.currentMode)) return;
+
+        const sel = UIController.selectedIndices;
+        const unitName = this.currentMode === 'horizontal' ? '欄' : '列';
+        const labelOf = (idx) =>
+            this.currentMode === 'horizontal'
+                ? (headers[idx] || `第 ${idx + 1} 欄`)
+                : `第 ${idx + 1} 列`;
+
+        if (sel.length === 0) {
+            el.textContent = `請點選${unitName === '欄' ? '欄位標題' : '列號'}組合算式（最後點選的為結果${unitName}）`;
+        } else if (sel.length === 1) {
+            el.textContent = `已選「${labelOf(sel[0])}」，請繼續點選其他${unitName}（最後點選的為結果${unitName}；再次點擊可切換 +/− 或取消）`;
+        } else {
+            const target = sel[sel.length - 1];
+            const formula = sel.slice(0, -1)
+                .map((idx, i) => {
+                    const sign = (UIController.selectedSigns.get(idx) || 1) === 1 ? '+' : '−';
+                    return i === 0 && sign === '+' ? labelOf(idx) : `${sign} ${labelOf(idx)}`;
+                })
+                .join(' ');
+            el.textContent = `算式：${formula} = ${labelOf(target)}（再次點擊可切換 +/− 或取消）`;
+        }
     },
 
     /**
@@ -242,10 +281,6 @@ const App = {
                 } else {
                     UIController.toggleSelection(idx);
                 }
-                this.renderGrid();
-            } else if (action === 'sign') {
-                const idx = !isNaN(col) ? col : row;
-                UIController.toggleSign(idx, e);
                 this.renderGrid();
             }
         });
