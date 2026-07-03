@@ -48,8 +48,8 @@
 
 .btn-outline {
     background: var(--bg-primary);
-    border: 1.5px solid var(--border);
-    color: var(--text-secondary);
+    border: 1.5px solid var(--border-hover);
+    color: var(--text-primary);
 }
 
 .btn-outline:hover {
@@ -140,10 +140,11 @@
 .select {
     padding: 10px 14px;
     padding-right: 36px;
-    border: 1.5px solid var(--border);
+    border: 2px solid var(--border-hover);
     border-radius: var(--radius-md);
     font-size: 14px;
-    background: var(--bg-primary);
+    font-weight: 600;
+    background: var(--bg-secondary);
     color: var(--text-primary);
     cursor: pointer;
     appearance: none;

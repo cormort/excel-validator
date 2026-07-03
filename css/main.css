@@ -93,13 +93,13 @@ a:hover {
 }
 
 .tab-btn {
-  padding: 6px 16px;
+  padding: 8px 18px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-muted);
-  background: transparent;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
   border: 1px solid transparent;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-radius: 20px;
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
@@ -108,14 +108,14 @@ a:hover {
 
 .tab-btn:hover {
   color: var(--text-primary);
-  background: var(--bg-secondary);
+  background: var(--border);
 }
 
 .tab-btn.active {
-  color: var(--primary);
-  background: var(--bg-secondary);
-  border-color: var(--border) var(--border) var(--bg-secondary);
+  color: #fff;
+  background: var(--primary);
   font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
 /* === Tab Pages === */
@@ -224,6 +224,11 @@ a:hover {
 }
 
 .toolbar-actions {
+  padding-left: var(--spacing-md);
+  border-left: 1px solid var(--border);
+}
+
+.toolbar-reset {
   margin-left: auto;
 }
 
@@ -622,7 +627,9 @@ a:hover {
   .toolbar-actions {
     width: 100%;
     margin-top: var(--spacing-sm);
-    justify-content: flex-end;
+    justify-content: flex-start;
+    padding-left: 0;
+    border-left: none;
   }
 }
 
