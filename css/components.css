@@ -27,6 +27,13 @@
     transform: translateY(0);
 }
 
+.btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 .btn-primary {
     background: linear-gradient(135deg, var(--primary), var(--primary-hover));
     color: white;
@@ -684,7 +691,7 @@
 .theme-toggle::before {
     content: '☀️';
     position: absolute;
-    left: 4px;
+    right: 6px;
     top: 50%;
     transform: translateY(-50%);
     font-size: 14px;
@@ -705,8 +712,8 @@
 
 [data-theme="dark"] .theme-toggle::before {
     content: '🌙';
-    left: auto;
-    right: 4px;
+    right: auto;
+    left: 6px;
 }
 
 [data-theme="dark"] .theme-toggle::after {

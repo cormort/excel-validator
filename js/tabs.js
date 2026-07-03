@@ -25,6 +25,14 @@
                 PasteApp.init();
                 PasteApp._initialized = true;
             }
+
+            // 切到貼上頁且貼上區可見時，自動聚焦文字框
+            if (targetId === 'paste-page') {
+                const pasteArea = document.getElementById('p-pasteArea');
+                if (pasteArea && !pasteArea.classList.contains('hidden')) {
+                    document.getElementById('p-pasteInput')?.focus();
+                }
+            }
         });
     });
 })();

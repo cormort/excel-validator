@@ -66,6 +66,8 @@ const PasteApp = {
 
         this.sheetData = data;
         this.isLoaded = true;
+        this._setActionState({ canValidate: true, canDownload: false, success: false });
+        document.getElementById('p-btnRepaste')?.classList.remove('hidden');
 
         // 自動偵測資料範圍
         const range = this._detectDataRange(data);
@@ -318,6 +320,7 @@ const PasteApp = {
 
                 this.renderGrid();
                 PasteUIController.updateErrorPanel(results);
+                this._setActionState({ canValidate: true, canDownload: results.hasErrors, success: !results.hasErrors });
 
                 if (results.hasErrors) {
                     PasteUIController.showToast('error', `發現 ${results.errorCount} 個錯誤`);
@@ -367,7 +370,21 @@ const PasteApp = {
         PasteUIController.reset();
         this.sheetData = [];
         this.isLoaded = false;
+        this._setActionState({ canValidate: false, canDownload: false, success: false });
+        document.getElementById('p-btnRepaste')?.classList.add('hidden');
         this.renderGrid();
         PasteUIController.showToast('success', '已重置');
+    },
+
+    /**
+     * 更新執行按鈕與成功橫幅狀態
+     */
+    _setActionState({ canValidate, canDownload, success }) {
+        const btnValidate = document.getElementById('p-btnValidate');
+        const btnDownload = document.getElementById('p-btnDownload');
+        const banner = document.getElementById('p-successBanner');
+        if (btnValidate) btnValidate.disabled = !canValidate;
+        if (btnDownload) btnDownload.disabled = !canDownload;
+        banner?.classList.toggle('hidden', !success);
     },
 };

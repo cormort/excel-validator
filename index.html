@@ -72,19 +72,11 @@
         <div class="toolbar-group">
           <label class="toolbar-label">驗算模式</label>
           <select id="calcMode" class="select select-mode">
-            <option value="vertical_group">
-              ↕️ 縱向 (關鍵字分組) - 適用預算表
-            </option>
-            <option value="vertical_indent">
-              ↕️ 縱向 (縮排分層) - 適用階層結構
-            </option>
-            <option value="horizontal_group">
-              ↔️ 橫向 (關鍵字分組) - 適用一般報表
-            </option>
-            <option value="horizontal">↔️ 橫向 (手動指定) - 設定 A±B=C</option>
-            <option value="vertical_row">
-              ↕️ 縱向 (手動指定) - 設定 A±B=C
-            </option>
+            <option value="vertical_group">↕️ 縱向・關鍵字分組（預算表）</option>
+            <option value="vertical_indent">↕️ 縱向・縮排分層（階層結構）</option>
+            <option value="horizontal_group">↔️ 橫向・關鍵字分組（一般報表）</option>
+            <option value="horizontal">↔️ 橫向・手動指定（A±B=C）</option>
+            <option value="vertical_row">↕️ 縱向・手動指定（A±B=C）</option>
           </select>
           <button id="btnModeHelp" class="btn btn-ghost btn-icon-sm" title="查看模式說明">
             ❓
@@ -111,10 +103,10 @@
 
         <!-- 右側：執行操作 -->
         <div class="toolbar-group toolbar-actions">
-          <button id="btnValidate" class="btn btn-success" title="開始執行驗算">
+          <button id="btnValidate" class="btn btn-success" title="開始執行驗算" disabled>
             <span>✓</span> 執行驗算
           </button>
-          <button id="btnDownload" class="btn btn-danger" title="下載錯誤報告">
+          <button id="btnDownload" class="btn btn-danger" title="下載錯誤報告" disabled>
             <span>📑</span> 下載報告
           </button>
         </div>
@@ -303,6 +295,11 @@
           </div>
         </div>
 
+        <!-- 驗算成功橫幅 -->
+        <div id="successBanner" class="success-banner hidden">
+          <span>✅</span><span>驗算完成，未發現錯誤</span>
+        </div>
+
         <!-- 資料表格 (檔案載入後顯示) -->
         <div id="gridContainer" class="grid-container hidden">
           <div class="grid-placeholder">
@@ -363,7 +360,7 @@
         <div class="toolbar">
           <!-- 左側：重新貼上 -->
           <div class="toolbar-group">
-            <button id="p-btnRepaste" class="btn btn-primary">
+            <button id="p-btnRepaste" class="btn btn-primary hidden">
               <span>📋</span> 重新貼上
             </button>
           </div>
@@ -372,19 +369,11 @@
           <div class="toolbar-group">
             <label class="toolbar-label">驗算模式</label>
             <select id="p-calcMode" class="select select-mode">
-              <option value="vertical_group">
-                ↕️ 縱向 (關鍵字分組) - 適用預算表
-              </option>
-              <option value="vertical_indent">
-                ↕️ 縱向 (縮排分層) - 適用階層結構
-              </option>
-              <option value="horizontal_group">
-                ↔️ 橫向 (關鍵字分組) - 適用一般報表
-              </option>
-              <option value="horizontal">↔️ 橫向 (手動指定) - 設定 A±B=C</option>
-              <option value="vertical_row">
-                ↕️ 縱向 (手動指定) - 設定 A±B=C
-              </option>
+              <option value="vertical_group">↕️ 縱向・關鍵字分組（預算表）</option>
+              <option value="vertical_indent">↕️ 縱向・縮排分層（階層結構）</option>
+              <option value="horizontal_group">↔️ 橫向・關鍵字分組（一般報表）</option>
+              <option value="horizontal">↔️ 橫向・手動指定（A±B=C）</option>
+              <option value="vertical_row">↕️ 縱向・手動指定（A±B=C）</option>
             </select>
             <button id="p-btnModeHelp" class="btn btn-ghost btn-icon-sm" title="查看模式說明">
               ❓
@@ -411,10 +400,10 @@
 
           <!-- 右側：執行操作 -->
           <div class="toolbar-group toolbar-actions">
-            <button id="p-btnValidate" class="btn btn-success" title="開始執行驗算">
+            <button id="p-btnValidate" class="btn btn-success" title="開始執行驗算" disabled>
               <span>✓</span> 執行驗算
             </button>
-            <button id="p-btnDownload" class="btn btn-danger" title="下載錯誤報告">
+            <button id="p-btnDownload" class="btn btn-danger" title="下載錯誤報告" disabled>
               <span>📑</span> 下載報告
             </button>
           </div>
@@ -556,8 +545,12 @@
               class="paste-textarea"
               placeholder="在此貼上 Excel 複製的內容 (Ctrl+V)&#10;提示：在 Excel 中選取範圍 → 複製 (Ctrl+C)"
               rows="15"
-              title="在 Excel 中選取範圍 → 複製 (Ctrl+C) → 在此文字框中貼上 (Ctrl+V)"
             ></textarea>
+          </div>
+
+          <!-- 驗算成功橫幅 -->
+          <div id="p-successBanner" class="success-banner hidden">
+            <span>✅</span><span>驗算完成，未發現錯誤</span>
           </div>
 
           <!-- 資料表格 (貼上後顯示) -->

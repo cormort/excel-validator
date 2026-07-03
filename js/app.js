@@ -35,6 +35,7 @@ const App = {
 
         if (result.success) {
             this.isLoaded = true;
+            this._setActionState({ canValidate: true, canDownload: false, success: false });
 
             // 更新工作表選擇器
             UIController.updateSheetSelector(result.sheetNames, result.currentSheet);
@@ -68,6 +69,7 @@ const App = {
         const range = ExcelParser.loadSheet(sheetName);
         Validator.reset();
         UIController.reset();
+        this._setActionState({ canValidate: true, canDownload: false, success: false });
 
         if (range) {
             document.getElementById('headerRow').value = range.headerRow;
@@ -297,6 +299,8 @@ const App = {
                 this.renderGrid();
                 UIController.updateErrorPanel(results);
 
+                this._setActionState({ canValidate: true, canDownload: results.hasErrors, success: !results.hasErrors });
+
                 if (results.hasErrors) {
                     UIController.showToast('error', `發現 ${results.errorCount} 個錯誤`);
                 } else {
@@ -343,8 +347,21 @@ const App = {
     reset() {
         Validator.reset();
         UIController.reset();
+        this._setActionState({ canValidate: this.isLoaded, canDownload: false, success: false });
         this.renderGrid();
         UIController.showToast('success', '已重置');
+    },
+
+    /**
+     * 更新執行按鈕與成功橫幅狀態
+     */
+    _setActionState({ canValidate, canDownload, success }) {
+        const btnValidate = document.getElementById('btnValidate');
+        const btnDownload = document.getElementById('btnDownload');
+        const banner = document.getElementById('successBanner');
+        if (btnValidate) btnValidate.disabled = !canValidate;
+        if (btnDownload) btnDownload.disabled = !canDownload;
+        banner?.classList.toggle('hidden', !success);
     },
 };
 

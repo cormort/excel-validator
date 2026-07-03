@@ -179,6 +179,24 @@ a:hover {
   color: var(--text-muted);
 }
 
+/* === 驗算成功橫幅 === */
+.success-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding: 10px 16px;
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.success-banner.hidden {
+  display: none;
+}
+
 /* === Responsive: Tabs === */
 @media (max-width: 768px) {
   .header-tabs {
