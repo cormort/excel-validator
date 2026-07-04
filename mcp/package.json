@@ -1,0 +1,14 @@
+{
+  "name": "sumcheck-mcp",
+  "version": "0.1.0",
+  "description": "SumCheck Excel 驗算 MCP server — 讓 AI agent 以極少 token 驗算試算表合計",
+  "type": "module",
+  "bin": {
+    "sumcheck-mcp": "server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "xlsx": "^0.18.5",
+    "zod": "^3.25.76"
+  }
+}
