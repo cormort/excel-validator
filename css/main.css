@@ -137,7 +137,7 @@ a:hover {
   justify-content: flex-start;
   flex: 1;
   min-height: 400px;
-  padding: 40px 60px;
+  padding: var(--spacing-md);
   border: 3px dashed var(--border);
   border-radius: var(--radius-xl);
   background: var(--bg-primary);
@@ -156,7 +156,7 @@ a:hover {
 
 .paste-textarea {
   width: 100%;
-  margin-top: var(--spacing-lg);
+  flex: 1;
   padding: var(--spacing-md);
   font-family: var(--font-mono, 'Consolas', 'Monaco', monospace);
   font-size: 13px;
@@ -177,6 +177,30 @@ a:hover {
 
 .paste-textarea::placeholder {
   color: var(--text-muted);
+}
+
+/* 可點選的標題/列號：避免 Shift+點擊觸發文字反白 */
+.data-grid th.clickable,
+.data-grid .row-header.clickable {
+  user-select: none;
+}
+
+/* === 驗算成功橫幅 === */
+.success-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding: 10px 16px;
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.success-banner.hidden {
+  display: none;
 }
 
 /* === Responsive: Tabs === */

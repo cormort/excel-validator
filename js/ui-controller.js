@@ -362,8 +362,8 @@ const UIController = {
         this.elements.logicHint.classList.remove("hidden");
         const hintText =
           mode === "horizontal"
-            ? "請點選欄位標題以設定驗算邏輯 (第一個點選 = 結果欄)"
-            : "請點選列號以設定驗算邏輯 (第一個點選 = 結果列)";
+            ? "請點選欄位標題組合算式（最後點選的為結果欄）"
+            : "請點選列號組合算式（最後點選的為結果列）";
         if (this.elements.logicHintText) {
           this.elements.logicHintText.textContent = hintText;
         }
@@ -398,7 +398,7 @@ const UIController = {
   /**
    * 顯示智能偵測結果
    */
-  showSmartDetection(result) {
+  showSmartDetection(result, autoApply = true) {
     const panel = this.elements.smartDetectPanel;
     if (!panel) return;
 
@@ -416,8 +416,8 @@ const UIController = {
 
     panel.classList.remove("hidden");
 
-    // 如果信心度很高，自動套用
-    if (result.confidence >= 70) {
+    // 如果信心度很高，自動套用（切換工作表時不自動套用，保留使用者已選模式）
+    if (autoApply && result.confidence >= 70) {
       this.selectMode(result.mode);
       this.elements.calcMode.value = result.mode;
       this.showToast("success", `智能推薦已套用：${modeInfo.name}`);
@@ -491,27 +491,48 @@ const UIController = {
    */
   toggleSelection(index) {
     const pos = this.selectedIndices.indexOf(index);
+    const isTarget =
+      pos > -1 &&
+      pos === this.selectedIndices.length - 1 &&
+      this.selectedIndices.length > 1;
 
-    if (pos > -1) {
+    if (pos === -1) {
+      this.selectedIndices.push(index);
+      this.selectedSigns.set(index, 1);
+    } else if (isTarget || this.selectedSigns.get(index) === -1) {
+      // 結果欄再點取消；減項再點取消（循環：+ → − → 取消）
       this.selectedIndices.splice(pos, 1);
       this.selectedSigns.delete(index);
     } else {
-      this.selectedIndices.push(index);
-      this.selectedSigns.set(index, 1);
+      this.selectedSigns.set(index, -1);
     }
 
     if (typeof App !== "undefined") App.renderGrid();
   },
 
   /**
-   * 切換正負號
+   * 清除所有選取
    */
-  toggleSign(index, event) {
-    if (event) event.stopPropagation();
+  clearSelection() {
+    this.selectedIndices = [];
+    this.selectedSigns.clear();
+    if (typeof App !== "undefined") App.renderGrid();
+  },
 
-    const current = this.selectedSigns.get(index) || 1;
-    this.selectedSigns.set(index, current * -1);
-
+  /**
+   * 範圍選取（Shift+點擊）：從錨點到目標間未選的全部補為加項，點擊的排最後
+   */
+  selectRange(anchor, to) {
+    const [lo, hi] = anchor < to ? [anchor, to] : [to, anchor];
+    for (let i = lo; i <= hi; i++) {
+      if (i === to || this.selectedIndices.includes(i)) continue;
+      this.selectedIndices.push(i);
+      this.selectedSigns.set(i, 1);
+    }
+    if (!this.selectedIndices.includes(to)) {
+      this.selectedIndices.push(to);
+      this.selectedSigns.set(to, 1);
+    }
     if (typeof App !== "undefined") App.renderGrid();
   },
 

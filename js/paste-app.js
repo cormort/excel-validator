@@ -24,6 +24,13 @@ const PasteApp = {
         if (gridContainer) {
             this._bindGridEvents(gridContainer);
         }
+
+        // 清除選取
+        ['p-btnClearLogic', 'p-btnClearLogicToolbar'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('click', () => {
+                PasteUIController.clearSelection();
+            });
+        });
         console.log('✓ PasteApp initialized');
     },
 
@@ -66,6 +73,8 @@ const PasteApp = {
 
         this.sheetData = data;
         this.isLoaded = true;
+        this._setActionState({ canValidate: true, canDownload: false, success: false });
+        document.getElementById('p-btnRepaste')?.classList.remove('hidden');
 
         // 自動偵測資料範圍
         const range = this._detectDataRange(data);
@@ -163,6 +172,16 @@ const PasteApp = {
         const maxCol = endCol || (data[hRowIdx]?.length || 0);
         const headers = data[hRowIdx] || [];
 
+        // 依角色決定底色：結果 = 綠、加項 = 藍、減項 = 紅
+        const roleBg = (idx) => {
+            const pos = PasteUIController.selectedIndices.indexOf(idx);
+            if (pos === -1) return '';
+            const isTarget = pos === PasteUIController.selectedIndices.length - 1 && PasteUIController.selectedIndices.length > 1;
+            if (isTarget) return 'background: var(--success-light);';
+            const isPlus = (PasteUIController.selectedSigns.get(idx) || 1) === 1;
+            return `background: var(${isPlus ? '--info-light' : '--error-light'});`;
+        };
+
         let html = '<table class="data-grid"><thead><tr class="sticky-header">';
         html += '<th class="row-header">列</th>';
 
@@ -172,18 +191,20 @@ const PasteApp = {
             const isClickable = ['horizontal', 'vertical_group', 'vertical_indent'].includes(this.currentMode);
 
             let badge = '';
+            let thStyle = '';
             let className = isClickable ? 'clickable' : '';
             if (isSelected) {
                 className += ' selected';
                 if (this.currentMode === 'horizontal') {
                     const pos = PasteUIController.selectedIndices.indexOf(c);
                     const isTarget = pos === PasteUIController.selectedIndices.length - 1 && PasteUIController.selectedIndices.length > 1;
+                    thStyle = roleBg(c) + ' font-weight: 700;';
                     if (isTarget) {
                         badge = '<span class="logic-tag" style="background:var(--badge-target)">=</span>';
                     } else {
                         const sign = PasteUIController.selectedSigns.get(c) || 1;
                         const isPlus = sign === 1;
-                        badge = `<span class="logic-tag interactive" style="background:${isPlus ? 'var(--badge-input)' : 'var(--badge-minus)'}" data-col="${c}" data-action="sign">${isPlus ? '+' : '-'}</span>`;
+                        badge = `<span class="logic-tag" style="background:${isPlus ? 'var(--badge-input)' : 'var(--badge-minus)'}">${isPlus ? '+' : '-'}</span>`;
                     }
                 } else {
                     badge = '<span class="logic-tag" style="background:#f59e0b">鍵</span>';
@@ -191,7 +212,7 @@ const PasteApp = {
             }
 
             const clickHandler = isClickable ? `data-col="${c}" data-action="toggle"` : '';
-            html += `<th class="${className}" ${clickHandler}>${badge}${h || 'Col ' + (c + 1)}</th>`;
+            html += `<th class="${className}" style="${thStyle}" ${clickHandler}>${badge}${h || 'Col ' + (c + 1)}</th>`;
         }
         html += '</tr></thead><tbody>';
 
@@ -212,12 +233,13 @@ const PasteApp = {
                 } else {
                     const sign = PasteUIController.selectedSigns.get(r) || 1;
                     const isPlus = sign === 1;
-                    rowBadge = `<span class="logic-tag interactive" style="background:${isPlus ? 'var(--badge-input)' : 'var(--badge-minus)'}" data-row="${r}" data-action="sign">${isPlus ? '+' : '-'}</span>`;
+                    rowBadge = `<span class="logic-tag" style="background:${isPlus ? 'var(--badge-input)' : 'var(--badge-minus)'}">${isPlus ? '+' : '-'}</span>`;
                 }
             }
 
             const rowClickHandler = isRowClickable ? `data-row="${r}" data-action="toggle"` : '';
-            html += `<tr><td class="${rowClass}" ${rowClickHandler}>${r + 1} ${rowBadge}</td>`;
+            const rowStyle = isRowSelected ? roleBg(r) + ' font-weight: 700;' : '';
+            html += `<tr><td class="${rowClass}" style="${rowStyle}" ${rowClickHandler}>${r + 1} ${rowBadge}</td>`;
 
             for (let c = sColIdx; c < maxCol; c++) {
                 const val = row[c];
@@ -230,6 +252,10 @@ const PasteApp = {
 
                 if (hasError) {
                     cellClass = 'err-cell';
+                } else if (this.currentMode === 'horizontal' && PasteUIController.selectedIndices.includes(c)) {
+                    style = roleBg(c);
+                } else if (this.currentMode === 'vertical_row' && isRowSelected) {
+                    style = roleBg(r);
                 } else if (isRowSelected || (this.currentMode !== 'vertical_row' && PasteUIController.selectedIndices.includes(c))) {
                     style = 'background: var(--primary-light);';
                 }
@@ -244,6 +270,38 @@ const PasteApp = {
 
         html += '</tbody></table>';
         container.innerHTML = html;
+
+        this._updateFormulaHint(headers);
+    },
+
+    /**
+     * 即時算式預覽（手動模式）
+     */
+    _updateFormulaHint(headers) {
+        const el = document.getElementById('p-logicHintText');
+        if (!el || !['horizontal', 'vertical_row'].includes(this.currentMode)) return;
+
+        const sel = PasteUIController.selectedIndices;
+        const unitName = this.currentMode === 'horizontal' ? '欄' : '列';
+        const labelOf = (idx) =>
+            this.currentMode === 'horizontal'
+                ? (headers[idx] || `第 ${idx + 1} 欄`)
+                : `第 ${idx + 1} 列`;
+
+        if (sel.length === 0) {
+            el.textContent = `請點選${unitName === '欄' ? '欄位標題' : '列號'}組合算式（最後點選的為結果${unitName}）`;
+        } else if (sel.length === 1) {
+            el.textContent = `已選「${labelOf(sel[0])}」，請繼續點選其他${unitName}（最後點選的為結果${unitName}；再次點擊可切換 +/− 或取消）`;
+        } else {
+            const target = sel[sel.length - 1];
+            const formula = sel.slice(0, -1)
+                .map((idx, i) => {
+                    const sign = (PasteUIController.selectedSigns.get(idx) || 1) === 1 ? '+' : '−';
+                    return i === 0 && sign === '+' ? labelOf(idx) : `${sign} ${labelOf(idx)}`;
+                })
+                .join(' ');
+            el.textContent = `算式：${formula} = ${labelOf(target)}（再次點擊可切換 +/− 或取消）`;
+        }
     },
 
     /**
@@ -262,13 +320,12 @@ const PasteApp = {
                 const idx = !isNaN(col) ? col : row;
                 if (this.currentMode === 'vertical_group' || this.currentMode === 'vertical_indent') {
                     PasteUIController.selectedIndices = [idx];
+                } else if (e.shiftKey && PasteUIController.selectedIndices.length > 0) {
+                    // Shift+點擊：從最後一個已選到此為止全部補為加項
+                    PasteUIController.selectRange(PasteUIController.selectedIndices[PasteUIController.selectedIndices.length - 1], idx);
                 } else {
                     PasteUIController.toggleSelection(idx);
                 }
-                this.renderGrid();
-            } else if (action === 'sign') {
-                const idx = !isNaN(col) ? col : row;
-                PasteUIController.toggleSign(idx, e);
                 this.renderGrid();
             }
         });
@@ -318,6 +375,7 @@ const PasteApp = {
 
                 this.renderGrid();
                 PasteUIController.updateErrorPanel(results);
+                this._setActionState({ canValidate: true, canDownload: results.hasErrors, success: !results.hasErrors });
 
                 if (results.hasErrors) {
                     PasteUIController.showToast('error', `發現 ${results.errorCount} 個錯誤`);
@@ -367,7 +425,21 @@ const PasteApp = {
         PasteUIController.reset();
         this.sheetData = [];
         this.isLoaded = false;
+        this._setActionState({ canValidate: false, canDownload: false, success: false });
+        document.getElementById('p-btnRepaste')?.classList.add('hidden');
         this.renderGrid();
         PasteUIController.showToast('success', '已重置');
+    },
+
+    /**
+     * 更新執行按鈕與成功橫幅狀態
+     */
+    _setActionState({ canValidate, canDownload, success }) {
+        const btnValidate = document.getElementById('p-btnValidate');
+        const btnDownload = document.getElementById('p-btnDownload');
+        const banner = document.getElementById('p-successBanner');
+        if (btnValidate) btnValidate.disabled = !canValidate;
+        if (btnDownload) btnDownload.disabled = !canDownload;
+        banner?.classList.toggle('hidden', !success);
     },
 };
