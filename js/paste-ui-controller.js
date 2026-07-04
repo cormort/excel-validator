@@ -349,6 +349,23 @@ const PasteUIController = {
     },
 
     /**
+     * 範圍選取（Shift+點擊）：從錨點到目標間未選的全部補為加項，點擊的排最後
+     */
+    selectRange(anchor, to) {
+        const [lo, hi] = anchor < to ? [anchor, to] : [to, anchor];
+        for (let i = lo; i <= hi; i++) {
+            if (i === to || this.selectedIndices.includes(i)) continue;
+            this.selectedIndices.push(i);
+            this.selectedSigns.set(i, 1);
+        }
+        if (!this.selectedIndices.includes(to)) {
+            this.selectedIndices.push(to);
+            this.selectedSigns.set(to, 1);
+        }
+        PasteApp.renderGrid();
+    },
+
+    /**
      * Loading
      */
     showLoading(show) {

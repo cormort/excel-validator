@@ -172,6 +172,16 @@ const PasteApp = {
         const maxCol = endCol || (data[hRowIdx]?.length || 0);
         const headers = data[hRowIdx] || [];
 
+        // 依角色決定底色：結果 = 綠、加項 = 藍、減項 = 紅
+        const roleBg = (idx) => {
+            const pos = PasteUIController.selectedIndices.indexOf(idx);
+            if (pos === -1) return '';
+            const isTarget = pos === PasteUIController.selectedIndices.length - 1 && PasteUIController.selectedIndices.length > 1;
+            if (isTarget) return 'background: var(--success-light);';
+            const isPlus = (PasteUIController.selectedSigns.get(idx) || 1) === 1;
+            return `background: var(${isPlus ? '--info-light' : '--error-light'});`;
+        };
+
         let html = '<table class="data-grid"><thead><tr class="sticky-header">';
         html += '<th class="row-header">列</th>';
 
@@ -181,12 +191,14 @@ const PasteApp = {
             const isClickable = ['horizontal', 'vertical_group', 'vertical_indent'].includes(this.currentMode);
 
             let badge = '';
+            let thStyle = '';
             let className = isClickable ? 'clickable' : '';
             if (isSelected) {
                 className += ' selected';
                 if (this.currentMode === 'horizontal') {
                     const pos = PasteUIController.selectedIndices.indexOf(c);
                     const isTarget = pos === PasteUIController.selectedIndices.length - 1 && PasteUIController.selectedIndices.length > 1;
+                    thStyle = roleBg(c) + ' font-weight: 700;';
                     if (isTarget) {
                         badge = '<span class="logic-tag" style="background:var(--badge-target)">=</span>';
                     } else {
@@ -200,7 +212,7 @@ const PasteApp = {
             }
 
             const clickHandler = isClickable ? `data-col="${c}" data-action="toggle"` : '';
-            html += `<th class="${className}" ${clickHandler}>${badge}${h || 'Col ' + (c + 1)}</th>`;
+            html += `<th class="${className}" style="${thStyle}" ${clickHandler}>${badge}${h || 'Col ' + (c + 1)}</th>`;
         }
         html += '</tr></thead><tbody>';
 
@@ -226,7 +238,8 @@ const PasteApp = {
             }
 
             const rowClickHandler = isRowClickable ? `data-row="${r}" data-action="toggle"` : '';
-            html += `<tr><td class="${rowClass}" ${rowClickHandler}>${r + 1} ${rowBadge}</td>`;
+            const rowStyle = isRowSelected ? roleBg(r) + ' font-weight: 700;' : '';
+            html += `<tr><td class="${rowClass}" style="${rowStyle}" ${rowClickHandler}>${r + 1} ${rowBadge}</td>`;
 
             for (let c = sColIdx; c < maxCol; c++) {
                 const val = row[c];
@@ -239,6 +252,10 @@ const PasteApp = {
 
                 if (hasError) {
                     cellClass = 'err-cell';
+                } else if (this.currentMode === 'horizontal' && PasteUIController.selectedIndices.includes(c)) {
+                    style = roleBg(c);
+                } else if (this.currentMode === 'vertical_row' && isRowSelected) {
+                    style = roleBg(r);
                 } else if (isRowSelected || (this.currentMode !== 'vertical_row' && PasteUIController.selectedIndices.includes(c))) {
                     style = 'background: var(--primary-light);';
                 }
@@ -303,6 +320,9 @@ const PasteApp = {
                 const idx = !isNaN(col) ? col : row;
                 if (this.currentMode === 'vertical_group' || this.currentMode === 'vertical_indent') {
                     PasteUIController.selectedIndices = [idx];
+                } else if (e.shiftKey && PasteUIController.selectedIndices.length > 0) {
+                    // Shift+點擊：從最後一個已選到此為止全部補為加項
+                    PasteUIController.selectRange(PasteUIController.selectedIndices[PasteUIController.selectedIndices.length - 1], idx);
                 } else {
                     PasteUIController.toggleSelection(idx);
                 }

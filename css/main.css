@@ -179,6 +179,12 @@ a:hover {
   color: var(--text-muted);
 }
 
+/* 可點選的標題/列號：避免 Shift+點擊觸發文字反白 */
+.data-grid th.clickable,
+.data-grid .row-header.clickable {
+  user-select: none;
+}
+
 /* === 驗算成功橫幅 === */
 .success-banner {
   display: flex;

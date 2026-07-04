@@ -398,7 +398,7 @@ const UIController = {
   /**
    * 顯示智能偵測結果
    */
-  showSmartDetection(result) {
+  showSmartDetection(result, autoApply = true) {
     const panel = this.elements.smartDetectPanel;
     if (!panel) return;
 
@@ -416,8 +416,8 @@ const UIController = {
 
     panel.classList.remove("hidden");
 
-    // 如果信心度很高，自動套用
-    if (result.confidence >= 70) {
+    // 如果信心度很高，自動套用（切換工作表時不自動套用，保留使用者已選模式）
+    if (autoApply && result.confidence >= 70) {
       this.selectMode(result.mode);
       this.elements.calcMode.value = result.mode;
       this.showToast("success", `智能推薦已套用：${modeInfo.name}`);
@@ -516,6 +516,23 @@ const UIController = {
   clearSelection() {
     this.selectedIndices = [];
     this.selectedSigns.clear();
+    if (typeof App !== "undefined") App.renderGrid();
+  },
+
+  /**
+   * 範圍選取（Shift+點擊）：從錨點到目標間未選的全部補為加項，點擊的排最後
+   */
+  selectRange(anchor, to) {
+    const [lo, hi] = anchor < to ? [anchor, to] : [to, anchor];
+    for (let i = lo; i <= hi; i++) {
+      if (i === to || this.selectedIndices.includes(i)) continue;
+      this.selectedIndices.push(i);
+      this.selectedSigns.set(i, 1);
+    }
+    if (!this.selectedIndices.includes(to)) {
+      this.selectedIndices.push(to);
+      this.selectedSigns.set(to, 1);
+    }
     if (typeof App !== "undefined") App.renderGrid();
   },
 

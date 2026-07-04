@@ -86,19 +86,19 @@ const App = {
         }
 
         Store.setState({ sheetData: ExcelParser.getData() });
-        this._runSmartDetection();
+        this._runSmartDetection(false);
         this.renderGrid();
     },
 
     /**
      * 執行智能偵測
      */
-    _runSmartDetection() {
+    _runSmartDetection(autoApply = true) {
         const data = ExcelParser.getData();
         const headerRow = parseInt(document.getElementById('headerRow')?.value) || 1;
 
         const result = SmartDetect.analyze(data, headerRow - 1);
-        UIController.showSmartDetection(result);
+        UIController.showSmartDetection(result, autoApply);
     },
 
     /**
@@ -143,6 +143,16 @@ const App = {
         const maxCol = endCol || (data[hRowIdx]?.length || 0);
         const headers = data[hRowIdx] || [];
 
+        // 依角色決定底色：結果 = 綠、加項 = 藍、減項 = 紅
+        const roleBg = (idx) => {
+            const pos = UIController.selectedIndices.indexOf(idx);
+            if (pos === -1) return '';
+            const isTarget = pos === UIController.selectedIndices.length - 1 && UIController.selectedIndices.length > 1;
+            if (isTarget) return 'background: var(--success-light);';
+            const isPlus = (UIController.selectedSigns.get(idx) || 1) === 1;
+            return `background: var(${isPlus ? '--info-light' : '--error-light'});`;
+        };
+
         let html = '<table class="data-grid"><thead><tr class="sticky-header">';
         html += '<th class="row-header">列</th>';
 
@@ -153,12 +163,14 @@ const App = {
             const isClickable = ['horizontal', 'vertical_group', 'vertical_indent'].includes(this.currentMode);
 
             let badge = '';
+            let thStyle = '';
             let className = isClickable ? 'clickable' : '';
             if (isSelected) {
                 className += ' selected';
                 if (this.currentMode === 'horizontal') {
                     const pos = UIController.selectedIndices.indexOf(c);
                     const isTarget = pos === UIController.selectedIndices.length - 1 && UIController.selectedIndices.length > 1;
+                    thStyle = roleBg(c) + ' font-weight: 700;';
                     if (isTarget) {
                         badge = '<span class="logic-tag" style="background:var(--badge-target)">=</span>';
                     } else {
@@ -172,7 +184,7 @@ const App = {
             }
 
             const clickHandler = isClickable ? `data-col="${c}" data-action="toggle"` : '';
-            html += `<th class="${className}" ${clickHandler}>${badge}${h || 'Col ' + (c + 1)}</th>`;
+            html += `<th class="${className}" style="${thStyle}" ${clickHandler}>${badge}${h || 'Col ' + (c + 1)}</th>`;
         }
         html += '</tr></thead><tbody>';
 
@@ -199,7 +211,8 @@ const App = {
             }
 
             const rowClickHandler = isRowClickable ? `data-row="${r}" data-action="toggle"` : '';
-            html += `<tr><td class="${rowClass}" ${rowClickHandler}>${r + 1} ${rowBadge}</td>`;
+            const rowStyle = isRowSelected ? roleBg(r) + ' font-weight: 700;' : '';
+            html += `<tr><td class="${rowClass}" style="${rowStyle}" ${rowClickHandler}>${r + 1} ${rowBadge}</td>`;
 
             for (let c = sColIdx; c < maxCol; c++) {
                 const val = row[c];
@@ -212,6 +225,10 @@ const App = {
 
                 if (hasError) {
                     cellClass = 'err-cell';
+                } else if (this.currentMode === 'horizontal' && UIController.selectedIndices.includes(c)) {
+                    style = roleBg(c);
+                } else if (this.currentMode === 'vertical_row' && isRowSelected) {
+                    style = roleBg(r);
                 } else if (isRowSelected || (this.currentMode !== 'vertical_row' && UIController.selectedIndices.includes(c))) {
                     style = 'background: var(--primary-light);';
                 }
@@ -278,6 +295,9 @@ const App = {
                 // 單選模式
                 if (this.currentMode === 'vertical_group' || this.currentMode === 'vertical_indent') {
                     UIController.selectedIndices = [idx];
+                } else if (e.shiftKey && UIController.selectedIndices.length > 0) {
+                    // Shift+點擊：從最後一個已選到此為止全部補為加項
+                    UIController.selectRange(UIController.selectedIndices[UIController.selectedIndices.length - 1], idx);
                 } else {
                     UIController.toggleSelection(idx);
                 }
