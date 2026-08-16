@@ -3,6 +3,8 @@
  * 整合所有模組並管理應用程式狀態
  */
 
+function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 const App = {
     // 狀態
     isLoaded: false,
@@ -184,7 +186,7 @@ const App = {
             }
 
             const clickHandler = isClickable ? `data-col="${c}" data-action="toggle"` : '';
-            html += `<th class="${className}" style="${thStyle}" ${clickHandler}>${badge}${h || 'Col ' + (c + 1)}</th>`;
+            html += `<th class="${className}" style="${thStyle}" ${clickHandler}>${badge}${escHtml(h || 'Col ' + (c + 1))}</th>`;
         }
         html += '</tr></thead><tbody>';
 
@@ -234,8 +236,8 @@ const App = {
                 }
 
                 html += `<td class="${cellClass}" style="${style}" data-row="${r}" data-col="${c}">`;
-                html += display;
-                if (errorMsg) html += `<span class="err-msg">${errorMsg}</span>`;
+                html += escHtml(display);
+                if (errorMsg) html += `<span class="err-msg">${escHtml(errorMsg)}</span>`;
                 html += '</td>';
             }
             html += '</tr>';
