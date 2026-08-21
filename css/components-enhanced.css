@@ -178,3 +178,29 @@
     padding: 1px 6px;
   }
 }
+
+/* ===== 表格上方浮動操作列 ===== */
+.sticky-actions {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.sticky-actions.hidden { display: none; }
+.sticky-actions-btns { display: flex; gap: var(--spacing-sm); }
+.sticky-actions-status {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.sticky-actions-status.is-error { color: var(--error); }
+.sticky-actions-status.is-ok { color: var(--success); }
