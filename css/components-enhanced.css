@@ -193,7 +193,12 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
+  opacity: 0.45;
+  transition: opacity var(--transition-fast);
 }
+.sticky-actions:hover,
+.sticky-actions:focus-within,
+.sticky-actions.is-dragging { opacity: 1; }
 .sticky-actions.hidden { display: none; }
 .sticky-actions-btns { display: flex; gap: var(--spacing-sm); }
 .sticky-actions-status {
@@ -213,3 +218,13 @@
     justify-content: space-between;
   }
 }
+
+.sticky-actions-grip {
+  cursor: grab;
+  color: var(--text-muted);
+  user-select: none;
+  font-size: 1rem;
+  line-height: 1;
+}
+.sticky-actions.is-dragging { cursor: grabbing; }
+.sticky-actions.is-dragging .sticky-actions-grip { cursor: grabbing; }

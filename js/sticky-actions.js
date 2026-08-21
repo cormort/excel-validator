@@ -10,6 +10,7 @@
     const bar = document.createElement("div");
     bar.className = "sticky-actions hidden";
     bar.innerHTML = `
+      <span class="sticky-actions-grip" title="拖曳移動">⠿</span>
       <span class="sticky-actions-status" data-status>—</span>
       <div class="sticky-actions-btns">
         <button class="btn btn-outline btn-sm" data-act="clear">✕ 清除選取</button>
@@ -29,6 +30,8 @@
     Object.keys(btns).forEach((k) =>
       btns[k].addEventListener("click", () => src[k]?.click())
     );
+
+    makeDraggable(bar);
 
     const errPanel = document.getElementById(p + "errorPanel");
     const errCount = document.getElementById(p + "errorCount");
@@ -64,6 +67,45 @@
         })
       );
     sync();
+  }
+
+  // 拖曳移動（避開按鈕），位置存在 localStorage
+  function makeDraggable(bar) {
+    const key = "stickyActionsPos";
+    const saved = JSON.parse(localStorage.getItem(key) || "null");
+    if (saved) place(saved.x, saved.y);
+
+    function place(x, y) {
+      const w = bar.offsetWidth || 300;
+      const h = bar.offsetHeight || 50;
+      x = Math.min(Math.max(x, 0), Math.max(innerWidth - w, 0));
+      y = Math.min(Math.max(y, 0), Math.max(innerHeight - h, 0));
+      bar.style.left = x + "px";
+      bar.style.top = y + "px";
+      bar.style.right = "auto";
+      bar.style.bottom = "auto";
+    }
+
+    bar.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button")) return;
+      const r = bar.getBoundingClientRect();
+      const dx = e.clientX - r.left;
+      const dy = e.clientY - r.top;
+      bar.setPointerCapture(e.pointerId);
+      bar.classList.add("is-dragging");
+      e.preventDefault();
+
+      const move = (ev) => place(ev.clientX - dx, ev.clientY - dy);
+      const up = () => {
+        bar.classList.remove("is-dragging");
+        bar.removeEventListener("pointermove", move);
+        bar.removeEventListener("pointerup", up);
+        const r2 = bar.getBoundingClientRect();
+        localStorage.setItem(key, JSON.stringify({ x: r2.left, y: r2.top }));
+      };
+      bar.addEventListener("pointermove", move);
+      bar.addEventListener("pointerup", up);
+    });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
