@@ -628,7 +628,7 @@
 
 /* 拖曳表頭右下角即可調整欄寬（原生 CSS resize） */
 .data-grid thead th {
-    width: 140px;
+    width: 96px;
     resize: horizontal;
 }
 
