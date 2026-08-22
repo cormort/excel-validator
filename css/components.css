@@ -607,7 +607,10 @@
 
 /* === 表格樣式 === */
 .data-grid {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
+    /* ponytail: fixed layout is what makes th 寬度可調整生效（auto 版會被內容撐開） */
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 13px;
@@ -619,6 +622,14 @@
     border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
     white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 拖曳表頭右下角即可調整欄寬（原生 CSS resize） */
+.data-grid thead th {
+    width: 140px;
+    resize: horizontal;
 }
 
 .data-grid thead th {
@@ -640,6 +651,11 @@
     border-right: 2px solid var(--border);
     z-index: 5;
     width: 60px;
+}
+
+.data-grid thead th.row-header {
+    width: 60px;
+    resize: none;
 }
 
 .data-grid .clickable:hover {
