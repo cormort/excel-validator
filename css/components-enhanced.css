@@ -112,7 +112,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  background: linear-gradient(135deg, var(--success), #059669);
+  background: var(--success);
   color: white;
   font-weight: 600;
   animation: glow 2s ease-in-out infinite;
@@ -152,11 +152,11 @@
   background: linear-gradient(
     135deg,
     var(--primary-light),
-    rgba(99, 102, 241, 0.1)
+    rgba(0, 111, 238, 0.1)
   );
   border-color: var(--primary);
   transform: scale(1.02);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+  box-shadow: var(--shadow-glow);
 }
 
 /* === Responsive for Upload Progress === */

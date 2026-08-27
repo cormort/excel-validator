@@ -41,12 +41,12 @@ const ReportGenerator = {
   <title>Excel 驗算稽核報告</title>
   <style>
     :root {
-      --primary: #6366f1;
-      --success: #10b981;
-      --error: #ef4444;
-      --bg: #f8fafc;
-      --text: #1e293b;
-      --border: #e2e8f0;
+      --primary: #006FEE;
+      --success: #17C964;
+      --error: #F31260;
+      --bg: #F4F4F5;
+      --text: #11181C;
+      --border: #E4E4E7;
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
