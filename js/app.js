@@ -75,7 +75,8 @@ const App = {
      * 切換工作表
      */
     switchSheet(sheetName) {
-        const range = ExcelParser.loadSheet(sheetName);
+        ExcelParser.loadSheet(sheetName);
+        const range = ExcelParser.detectDataRange();
         Validator.reset();
         UIController.reset();
         this._setActionState({ canValidate: true, canDownload: false, success: false });
