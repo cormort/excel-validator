@@ -704,6 +704,17 @@
     margin-top: 4px;
 }
 
+/* 存成文字的數字（Excel 的 SUM 會略過） */
+.data-grid .text-num-cell {
+    box-shadow: inset 0 0 0 2px #f59e0b;
+}
+.text-num-tag {
+    display: block;
+    font-size: 10px;
+    color: #b45309;
+    margin-top: 4px;
+}
+
 /* === 主題切換按鈕 === */
 .theme-toggle {
     position: relative;

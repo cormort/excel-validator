@@ -222,6 +222,8 @@ const App = {
                 const display = ExcelParser.formatNumber(val);
                 const hasError = Validator.hasError(r, c);
                 const errorMsg = Validator.getErrorMessage(r, c);
+                // 存成文字的數字：本工具照樣算進驗算，但 Excel 的 SUM 會略過，合計因此偏低
+                const isTextNumber = typeof val === 'string' && !isNaN(Validator._parseNumber(val));
 
                 let cellClass = '';
                 let style = '';
@@ -236,8 +238,11 @@ const App = {
                     style = 'background: var(--primary-light);';
                 }
 
-                html += `<td class="${cellClass}" style="${style}" data-row="${r}" data-col="${c}">`;
+                if (isTextNumber) cellClass += ' text-num-cell';
+                const title = isTextNumber ? ' title="文字型數字：Excel 的 SUM 不會加總這格"' : '';
+                html += `<td class="${cellClass}" style="${style}" data-row="${r}" data-col="${c}"${title}>`;
                 html += escHtml(display);
+                if (isTextNumber) html += '<span class="text-num-tag">文字型數字</span>';
                 if (errorMsg) html += `<span class="err-msg">${escHtml(errorMsg)}</span>`;
                 html += '</td>';
             }
